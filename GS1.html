@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GS Constructions - Material & Labour Tracker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        :root { --primary: #2c3e50; --secondary: #34495e; --accent: #e67e22; --light: #ecf0f1; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--light); margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1, h2 { color: var(--primary); text-align: center; }
+        .auth-box { text-align: center; margin-bottom: 20px; }
+        .card { border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        input, select, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background: var(--secondary); }
+        .btn-pdf { background: #27ae60; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #f4f4f4; }
+        .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #7f8c8d; border-top: 1px solid #eee; padding-top: 10px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>GS Constructions</h1>
+    
+    <div id="login-section" class="auth-box">
+        <p>Please login to manage your construction data.</p>
+        <button onclick="login()">Login with Google</button>
+    </div>
+
+    <div id="main-content" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <p id="user-info"></p>
+            <button onclick="logout()" style="width: auto; background: #c0392b;">Logout</button>
+        </div>
+
+        <hr>
+
+        <div class="card">
+            <h2>Material List & Weight Calculator</h2>
+            <select id="mat-type">
+                <option value="46">ISMB 300 (46 kg/m)</option>
+                <option value="22.3">ISMC 200 (22.3 kg/m)</option>
+                <option value="13.1">ISMC 125 (13.1 kg/m)</option>
+                <option value="19.7">ISA 130 (19.7 kg/m)</option>
+                <option value="11">ISA 75 (11 kg/m)</option>
+                <option value="1.5">ISF 32 (1.5 kg/m)</option>
+                <option value="14.9">ISA 100 (14.9 kg/m)</option>
+                <option value="4.7">ISF 100 (4.7 kg/m)</option>
+                <option value="4.5">ISA 50 (4.5 kg/m)</option>
+                <option value="78.5">10mm Plate (78.5 kg/sq.m)</option>
+                <option value="53.2">CH plate (53.2 kg/sq.m)</option>
+                <option value="custom">Other (Custom Weight)</option>
+            </select>
+            <input type="text" id="custom-name" class="hidden" placeholder="Material Name">
+            <input type="number" id="custom-weight" class="hidden" placeholder="Unit Weight (kg/m or kg/sq.m)">
+            <input type="number" id="mat-length" placeholder="Length/Area in MM (e.g., 1000)">
+            <button onclick="addMaterial()">Add Material</button>
+            
+            <table id="mat-table">
+                <thead>
+                    <tr><th>Material</th><th>Unit Wt</th><th>Qty (MM)</th><th>Total Wt (KG)</th></tr>
+                </thead>
+                <tbody id="mat-body"></tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>Daily Workers & Overtime</h2>
+            <input type="date" id="work-date">
+            <input type="text" id="worker-name" placeholder="Worker Name">
+            <input type="number" id="ot-hours" placeholder="Overtime Hours">
+            <button onclick="addWorker()">Add Worker Entry</button>
+
+            <table id="worker-table">
+                <thead>
+                    <tr><th>Date</th><th>Name</th><th>OT Hours</th></tr>
+                </thead>
+                <tbody id="worker-body"></tbody>
+            </table>
+        </div>
+
+        <button class="btn-pdf" onclick="generatePDF()">Export as PDF</button>
+
+        <div class="footer">
+            Developed by: <b>soorajrmaranadu</b>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Firebase Config
+    const firebaseConfig = {
+        apiKey: "AIzaSyDRDLw2bE_iG7OuE6diCGtrLmDePZStKr8",
+        authDomain: "gsconstructions-3f4c9.firebaseapp.com",
+        projectId: "gsconstructions-3f4c9",
+        storageBucket: "gsconstructions-3f4c9.firebasestorage.app",
+        messagingSenderId: "622430516475",
+        appId: "1:622430516475:web:17fd96908472cbd665ec5e",
+        measurementId: "G-9JXQGLFT94"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const provider = new firebase.auth.GoogleAuthProvider();
+
+    // UI Elements
+    const loginSec = document.getElementById('login-section');
+    const mainContent = document.getElementById('main-content');
+    const matType = document.getElementById('mat-type');
+
+    // Toggle Custom Material Inputs
+    matType.addEventListener('change', () => {
+        const isCustom = matType.value === 'custom';
+        document.getElementById('custom-name').classList.toggle('hidden', !isCustom);
+        document.getElementById('custom-weight').classList.toggle('hidden', !isCustom);
+    });
+
+    // Auth Functions
+    function login() { auth.signInWithPopup(provider); }
+    function logout() { auth.signOut(); }
+
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            loginSec.classList.add('hidden');
+            mainContent.classList.remove('hidden');
+            document.getElementById('user-info').innerText = `User: ${user.displayName}`;
+            loadData();
+        } else {
+            loginSec.classList.remove('hidden');
+            mainContent.classList.add('hidden');
+        }
+    });
+
+    // Data Storage Logic
+    async function addMaterial() {
+        let name = matType.options[matType.selectedIndex].text;
+        let unitWt = parseFloat(matType.value);
+        const lengthMM = parseFloat(document.getElementById('mat-length').value);
+
+        if(matType.value === 'custom') {
+            name = document.getElementById('custom-name').value;
+            unitWt = parseFloat(document.getElementById('custom-weight').value);
+        }
+
+        if(!lengthMM || isNaN(unitWt)) return alert("Enter valid data");
+
+        const totalWt = (unitWt * (lengthMM / 1000)).toFixed(2);
+
+        await db.collection('materials').add({ name, unitWt, lengthMM, totalWt, userId: auth.currentUser.uid });
+        loadData();
+    }
+
+    async function addWorker() {
+        const date = document.getElementById('work-date').value;
+        const name = document.getElementById('worker-name').value;
+        const ot = parseFloat(document.getElementById('ot-hours').value) || 0;
+
+        if(!date || !name) return alert("Fill all fields");
+
+        await db.collection('workers').add({ date, name, ot, userId: auth.currentUser.uid });
+        loadData();
+    }
+
+    async function loadData() {
+        // Load Materials
+        const matSnap = await db.collection('materials').where('userId', '==', auth.currentUser.uid).get();
+        let matHtml = '';
+        matSnap.forEach(doc => {
+            const d = doc.data();
+            matHtml += `<tr><td>${d.name}</td><td>${d.unitWt}</td><td>${d.lengthMM}</td><td>${d.totalWt}</td></tr>`;
+        });
+        document.getElementById('mat-body').innerHTML = matHtml;
+
+        // Load Workers
+        const workSnap = await db.collection('workers').where('userId', '==', auth.currentUser.uid).get();
+        let workHtml = '';
+        workSnap.forEach(doc => {
+            const d = doc.data();
+            workHtml += `<tr><td>${d.date}</td><td>${d.name}</td><td>${d.ot}</td></tr>`;
+        });
+        document.getElementById('worker-body').innerHTML = workHtml;
+    }
+
+    // PDF Generation
+    function generatePDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        doc.text("GS Constructions - Report", 14, 15);
+        doc.setFontSize(10);
+        doc.text("Generated by: soorajrmaranadu", 14, 22);
+
+        doc.autoTable({ html: '#mat-table', startY: 30, headStyles: {fillColor: [44, 62, 80]} });
+        doc.autoTable({ html: '#worker-table', startY: doc.lastAutoTable.finalY + 10, headStyles: {fillColor: [230, 126, 34]} });
+
+        doc.save("GS_Constructions_Report.pdf");
+    }
+</script>
+
+</body>
+</html>
