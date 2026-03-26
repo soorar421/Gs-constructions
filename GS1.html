@@ -3,28 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GS Constructions - Material & Labour Tracker</title>
+    <title>GS Constructions - Site Manager</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
-        :root { --primary: #2c3e50; --secondary: #34495e; --accent: #e67e22; --light: #ecf0f1; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--light); margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1, h2 { color: var(--primary); text-align: center; }
-        .auth-box { text-align: center; margin-bottom: 20px; }
-        .card { border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
-        input, select, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; }
-        button:hover { background: var(--secondary); }
-        .btn-pdf { background: #27ae60; margin-top: 10px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background: #f4f4f4; }
-        .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #7f8c8d; border-top: 1px solid #eee; padding-top: 10px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 15px; margin: 0; color: #333; }
+        .container { max-width: 850px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #1a73e8; margin-bottom: 10px; }
         .hidden { display: none; }
+        label { font-weight: bold; display: block; margin-top: 12px; color: #555; font-size: 14px; }
+        input, select, button { width: 100%; padding: 12px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { background: #1a73e8; color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-red { background: #d93025; }
+        .btn-green { background: #1e8e3e; margin-top: 25px; height: 50px; font-size: 16px; }
+        .section-card { background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid #1a73e8; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; font-size: 11px; }
+        th, td { border: 1px solid #eee; padding: 8px; text-align: left; }
+        th { background: #e8f0fe; }
+        .del-btn { background: #ff4d4d; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; width: auto; margin: 0; font-size: 10px; }
+        .search-box { background: #fff; border: 2px solid #1a73e8 !important; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -32,181 +32,204 @@
 <div class="container">
     <h1>GS Constructions</h1>
     
-    <div id="login-section" class="auth-box">
-        <p>Please login to manage your construction data.</p>
-        <button onclick="login()">Login with Google</button>
+    <div id="login-section" style="text-align: center; padding: 50px 0;">
+        <button onclick="login()">Login with Google to Start</button>
     </div>
 
     <div id="main-content" class="hidden">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <p id="user-info"></p>
-            <button onclick="logout()" style="width: auto; background: #c0392b;">Logout</button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <span id="user-name" style="font-weight: bold;"></span>
+            <button onclick="logout()" class="btn-red" style="width: auto; padding: 5px 15px; margin: 0;">Logout</button>
         </div>
 
-        <hr>
+        <div class="section-card" style="background: #fffde7; border-color: #fbc02d;">
+            <label>Project / Site Name</label>
+            <input type="text" id="site-name" placeholder="Enter Site Name" oninput="saveSiteName()">
+        </div>
 
-        <div class="card">
-            <h2>Material List & Weight Calculator</h2>
-            <select id="mat-type">
-                <option value="46">ISMB 300 (46 kg/m)</option>
-                <option value="22.3">ISMC 200 (22.3 kg/m)</option>
-                <option value="13.1">ISMC 125 (13.1 kg/m)</option>
-                <option value="19.7">ISA 130 (19.7 kg/m)</option>
-                <option value="11">ISA 75 (11 kg/m)</option>
-                <option value="1.5">ISF 32 (1.5 kg/m)</option>
-                <option value="14.9">ISA 100 (14.9 kg/m)</option>
-                <option value="4.7">ISF 100 (4.7 kg/m)</option>
-                <option value="4.5">ISA 50 (4.5 kg/m)</option>
-                <option value="78.5">10mm Plate (78.5 kg/sq.m)</option>
-                <option value="53.2">CH plate (53.2 kg/sq.m)</option>
-                <option value="custom">Other (Custom Weight)</option>
+        <div class="section-card">
+            <h3>1. Material Entry</h3>
+            <input type="date" id="mat-date">
+            <select id="mat-type" onchange="togglePlateFields()">
+                <option value="46" data-type="linear">ISMB 300 (46 kg/m)</option>
+                <option value="22.3" data-type="linear">ISMC 200 (22.3 kg/m)</option>
+                <option value="13.1" data-type="linear">ISMC 125 (13.1 kg/m)</option>
+                <option value="19.7" data-type="linear">ISA 130 (19.7 kg/m)</option>
+                <option value="11" data-type="linear">ISA 75 (11 kg/m)</option>
+                <option value="1.5" data-type="linear">ISF 32 (1.5 kg/m)</option>
+                <option value="14.9" data-type="linear">ISA 100 (14.9 kg/m)</option>
+                <option value="4.7" data-type="linear">ISF 100 (4.7 kg/m)</option>
+                <option value="4.5" data-type="linear">ISA 50 (4.5 kg/m)</option>
+                <option value="78.5" data-type="plate">10mm Plate (78.5 kg/sq.m)</option>
+                <option value="53.2" data-type="plate">CH plate (53.2 kg/sq.m)</option>
             </select>
-            <input type="text" id="custom-name" class="hidden" placeholder="Material Name">
-            <input type="number" id="custom-weight" class="hidden" placeholder="Unit Weight (kg/m or kg/sq.m)">
-            <input type="number" id="mat-length" placeholder="Length/Area in MM (e.g., 1000)">
+            <div id="width-container" class="hidden"><input type="number" id="mat-width" placeholder="Width in MM"></div>
+            <input type="number" id="mat-length" placeholder="Length in MM">
             <button onclick="addMaterial()">Add Material</button>
-            
             <table id="mat-table">
-                <thead>
-                    <tr><th>Material</th><th>Unit Wt</th><th>Qty (MM)</th><th>Total Wt (KG)</th></tr>
-                </thead>
+                <thead><tr><th>Date</th><th>Item</th><th>Size</th><th>Wt(KG)</th><th>Action</th></tr></thead>
                 <tbody id="mat-body"></tbody>
             </table>
         </div>
 
-        <div class="card">
-            <h2>Daily Workers & Overtime</h2>
+        <div class="section-card" style="border-left-color: #f39c12;">
+            <h3>2. Tools & Equipment</h3>
+            <input type="text" id="tool-search" class="search-box" placeholder="Search tool..." oninput="filterTools()">
+            <select id="tool-name" onchange="toggleToolFields()">
+                <option>Chain Block</option><option>Welding Machine</option><option>Gas Cutter</option>
+                <option>O2 Cylinder</option><option>LPG Cylinder</option><option>Welding Rod</option>
+                <option>Cutting Wheel 4"</option><option>Cutting Wheel 7"</option><option>Grinding Machine</option>
+                <option>Drill Machine</option><option>Impact Wrench</option><option>Pipe Wrench</option>
+                <option>Adjustable Spanner</option><option>Ring Spanner Set</option><option>DE Spanner Set</option>
+                <option>Allen Key Set</option><option>Hammer Drill</option><option>Sledge Hammer</option>
+                <option>Ball Peen Hammer</option><option>Chisel</option><option>Measuring Tape</option>
+                <option>Spirit Level</option><option>Plumb Bob</option><option>Right Angle</option>
+                <option>Vernier Caliper</option><option>Micrometer</option><option>Pipe Cutter</option>
+                <option>Pipe Bender</option><option>Tube Bender</option><option>Torque Wrench</option>
+                <option>Files (Flat/Round)</option><option>Wire Brush</option><option>C-Clamp</option>
+                <option>Bench Vice</option><option>Anvil</option><option>Hydraulic Jack</option>
+                <option>Pulling Lift (Tirfor)</option><option>D-Shackle</option><option>Wire Rope Sling</option>
+                <option>Nylon Sling</option><option>Safety Belt</option><option>Safety Helmet</option>
+                <option>Safety Shoes</option><option>Welding Goggles</option><option>Hand Gloves</option>
+                <option>Face Shield</option><option>Ear Plugs</option><option>Fire Extinguisher</option>
+                <option>Air Compressor</option><option>Portable Generator</option>
+            </select>
+            <div id="tool-id-container" class="hidden">
+                <label id="tool-id-label">ID Number</label>
+                <input type="text" id="tool-id-val" placeholder="ID Number">
+            </div>
+            <input type="number" id="tool-qty" placeholder="Quantity">
+            <button onclick="addTool()" style="background: #f39c12;">Add Tool</button>
+            <table id="tool-table">
+                <thead><tr><th>Date</th><th>Tool Name</th><th>ID/No</th><th>Qty</th><th>Action</th></tr></thead>
+                <tbody id="tool-body"></tbody>
+            </table>
+        </div>
+
+        <div class="section-card" style="border-left-color: #1e8e3e;">
+            <h3>3. Worker Overtime</h3>
             <input type="date" id="work-date">
             <input type="text" id="worker-name" placeholder="Worker Name">
-            <input type="number" id="ot-hours" placeholder="Overtime Hours">
-            <button onclick="addWorker()">Add Worker Entry</button>
-
+            <input type="number" id="ot-hours" placeholder="OT Hours">
+            <button onclick="addWorker()" style="background: #1e8e3e;">Add Worker</button>
             <table id="worker-table">
-                <thead>
-                    <tr><th>Date</th><th>Name</th><th>OT Hours</th></tr>
-                </thead>
+                <thead><tr><th>Date</th><th>Name</th><th>OT</th><th>Action</th></tr></thead>
                 <tbody id="worker-body"></tbody>
             </table>
         </div>
 
-        <button class="btn-pdf" onclick="generatePDF()">Export as PDF</button>
-
-        <div class="footer">
-            Developed by: <b>soorajrmaranadu</b>
-        </div>
+        <button onclick="generatePDF()" class="btn-green">Download Full Report (PDF)</button>
+        <div class="footer">Developed by soorajrmaranadu</div>
     </div>
 </div>
 
 <script>
-    // Firebase Config
     const firebaseConfig = {
         apiKey: "AIzaSyDRDLw2bE_iG7OuE6diCGtrLmDePZStKr8",
         authDomain: "gsconstructions-3f4c9.firebaseapp.com",
         projectId: "gsconstructions-3f4c9",
         storageBucket: "gsconstructions-3f4c9.firebasestorage.app",
         messagingSenderId: "622430516475",
-        appId: "1:622430516475:web:17fd96908472cbd665ec5e",
-        measurementId: "G-9JXQGLFT94"
+        appId: "1:622430516475:web:17fd96908472cbd665ec5e"
     };
 
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    const provider = new firebase.auth.GoogleAuthProvider();
+    const auth = firebase.auth(), db = firebase.firestore(), provider = new firebase.auth.GoogleAuthProvider();
+    const originalTools = Array.from(document.getElementById('tool-name').options).map(opt => opt.text);
 
-    // UI Elements
-    const loginSec = document.getElementById('login-section');
-    const mainContent = document.getElementById('main-content');
-    const matType = document.getElementById('mat-type');
-
-    // Toggle Custom Material Inputs
-    matType.addEventListener('change', () => {
-        const isCustom = matType.value === 'custom';
-        document.getElementById('custom-name').classList.toggle('hidden', !isCustom);
-        document.getElementById('custom-weight').classList.toggle('hidden', !isCustom);
-    });
-
-    // Auth Functions
-    function login() { auth.signInWithPopup(provider); }
-    function logout() { auth.signOut(); }
+    function login() { auth.signInWithRedirect(provider); }
+    function logout() { auth.signOut().then(() => location.reload()); }
 
     auth.onAuthStateChanged(user => {
         if (user) {
-            loginSec.classList.add('hidden');
-            mainContent.classList.remove('hidden');
-            document.getElementById('user-info').innerText = `User: ${user.displayName}`;
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
+            document.getElementById('user-name').innerText = "User: " + user.displayName;
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('mat-date').value = today; document.getElementById('work-date').value = today;
             loadData();
-        } else {
-            loginSec.classList.remove('hidden');
-            mainContent.classList.add('hidden');
         }
     });
 
-    // Data Storage Logic
-    async function addMaterial() {
-        let name = matType.options[matType.selectedIndex].text;
-        let unitWt = parseFloat(matType.value);
-        const lengthMM = parseFloat(document.getElementById('mat-length').value);
-
-        if(matType.value === 'custom') {
-            name = document.getElementById('custom-name').value;
-            unitWt = parseFloat(document.getElementById('custom-weight').value);
+    async function deleteItem(collection, id) {
+        if(confirm("ഈ എൻട്രി ഡിലീറ്റ് ചെയ്യണോ?")) {
+            await db.collection(collection).doc(id).delete();
+            loadData();
         }
+    }
 
-        if(!lengthMM || isNaN(unitWt)) return alert("Enter valid data");
+    function filterTools() {
+        const search = document.getElementById('tool-search').value.toLowerCase();
+        const select = document.getElementById('tool-name');
+        select.innerHTML = '';
+        originalTools.forEach(tool => { if (tool.toLowerCase().includes(search)) { const opt = document.createElement('option'); opt.text = tool; select.add(opt); } });
+        toggleToolFields();
+    }
 
-        const totalWt = (unitWt * (lengthMM / 1000)).toFixed(2);
+    function togglePlateFields() {
+        const type = document.getElementById('mat-type').options[document.getElementById('mat-type').selectedIndex].getAttribute('data-type');
+        document.getElementById('width-container').classList.toggle('hidden', type !== 'plate');
+    }
 
-        await db.collection('materials').add({ name, unitWt, lengthMM, totalWt, userId: auth.currentUser.uid });
+    function toggleToolFields() {
+        const tool = document.getElementById('tool-name').value;
+        const idContainer = document.getElementById('tool-id-container');
+        if (tool === 'O2 Cylinder' || tool === 'Welding Machine') {
+            idContainer.classList.remove('hidden');
+            document.getElementById('tool-id-label').innerText = tool === 'O2 Cylinder' ? "Cylinder Number" : "QT Number";
+        } else { idContainer.classList.add('hidden'); }
+    }
+
+    async function addMaterial() {
+        const date = document.getElementById('mat-date').value, sel = document.getElementById('mat-type');
+        const length = parseFloat(document.getElementById('mat-length').value);
+        if (!length || !date) return alert("Fill fields");
+        let weight = 0, size = length + "mm";
+        if (sel.options[sel.selectedIndex].getAttribute('data-type') === 'plate') {
+            const width = parseFloat(document.getElementById('mat-width').value);
+            weight = ((length/1000)*(width/1000)*parseFloat(sel.value)).toFixed(2);
+            size = length + "x" + width + "mm";
+        } else { weight = ((length/1000)*parseFloat(sel.value)).toFixed(2); }
+        await db.collection('materials').add({ date, name: sel.options[sel.selectedIndex].text, size, weight, uid: auth.currentUser.uid, ts: Date.now() });
+        loadData();
+    }
+
+    async function addTool() {
+        const name = document.getElementById('tool-name').value, idVal = document.getElementById('tool-id-val').value || "-", qty = document.getElementById('tool-qty').value;
+        if(!qty) return alert("Enter quantity");
+        await db.collection('tools').add({ date: new Date().toLocaleDateString(), name, idVal, qty, uid: auth.currentUser.uid, ts: Date.now() });
         loadData();
     }
 
     async function addWorker() {
-        const date = document.getElementById('work-date').value;
-        const name = document.getElementById('worker-name').value;
-        const ot = parseFloat(document.getElementById('ot-hours').value) || 0;
-
-        if(!date || !name) return alert("Fill all fields");
-
-        await db.collection('workers').add({ date, name, ot, userId: auth.currentUser.uid });
+        const date = document.getElementById('work-date').value, name = document.getElementById('worker-name').value, ot = document.getElementById('ot-hours').value;
+        if (!date || !name) return alert("Fill fields");
+        await db.collection('workers').add({ date, name, ot, uid: auth.currentUser.uid, ts: Date.now() });
         loadData();
     }
 
     async function loadData() {
-        // Load Materials
-        const matSnap = await db.collection('materials').where('userId', '==', auth.currentUser.uid).get();
-        let matHtml = '';
-        matSnap.forEach(doc => {
-            const d = doc.data();
-            matHtml += `<tr><td>${d.name}</td><td>${d.unitWt}</td><td>${d.lengthMM}</td><td>${d.totalWt}</td></tr>`;
-        });
-        document.getElementById('mat-body').innerHTML = matHtml;
-
-        // Load Workers
-        const workSnap = await db.collection('workers').where('userId', '==', auth.currentUser.uid).get();
-        let workHtml = '';
-        workSnap.forEach(doc => {
-            const d = doc.data();
-            workHtml += `<tr><td>${d.date}</td><td>${d.name}</td><td>${d.ot}</td></tr>`;
-        });
-        document.getElementById('worker-body').innerHTML = workHtml;
+        const uid = auth.currentUser.uid;
+        const mS = await db.collection('materials').where('uid', '==', uid).orderBy('ts', 'desc').get();
+        document.getElementById('mat-body').innerHTML = mS.docs.map(d => `<tr><td>${d.data().date}</td><td>${d.data().name}</td><td>${d.data().size}</td><td>${d.data().weight}</td><td><button class="del-btn" onclick="deleteItem('materials','${d.id}')">Del</button></td></tr>`).join('');
+        const tS = await db.collection('tools').where('uid', '==', uid).orderBy('ts', 'desc').get();
+        document.getElementById('tool-body').innerHTML = tS.docs.map(d => `<tr><td>${d.data().date}</td><td>${d.data().name}</td><td>${d.data().idVal}</td><td>${d.data().qty}</td><td><button class="del-btn" onclick="deleteItem('tools','${d.id}')">Del</button></td></tr>`).join('');
+        const wS = await db.collection('workers').where('uid', '==', uid).orderBy('ts', 'desc').get();
+        document.getElementById('worker-body').innerHTML = wS.docs.map(d => `<tr><td>${d.data().date}</td><td>${d.data().name}</td><td>${d.data().ot}</td><td><button class="del-btn" onclick="deleteItem('workers','${d.id}')">Del</button></td></tr>`).join('');
+        document.getElementById('site-name').value = localStorage.getItem('gs_site') || "";
     }
 
-    // PDF Generation
+    function saveSiteName() { localStorage.setItem('gs_site', document.getElementById('site-name').value); }
+
     function generatePDF() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        
-        doc.text("GS Constructions - Report", 14, 15);
-        doc.setFontSize(10);
-        doc.text("Generated by: soorajrmaranadu", 14, 22);
-
-        doc.autoTable({ html: '#mat-table', startY: 30, headStyles: {fillColor: [44, 62, 80]} });
-        doc.autoTable({ html: '#worker-table', startY: doc.lastAutoTable.finalY + 10, headStyles: {fillColor: [230, 126, 34]} });
-
-        doc.save("GS_Constructions_Report.pdf");
+        const { jsPDF } = window.jspdf; const doc = new jsPDF();
+        const site = document.getElementById('site-name').value || "Site Report";
+        doc.text("GS CONSTRUCTIONS - " + site, 14, 15);
+        doc.autoTable({ html: '#mat-table', startY: 25, columns: [0,1,2,3] });
+        doc.autoTable({ html: '#tool-table', startY: doc.lastAutoTable.finalY + 10, columns: [0,1,2,3] });
+        doc.autoTable({ html: '#worker-table', startY: doc.lastAutoTable.finalY + 10, columns: [0,1,2] });
+        doc.save(site + ".pdf");
     }
 </script>
-
 </body>
 </html>
