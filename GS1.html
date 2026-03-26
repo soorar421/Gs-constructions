@@ -25,6 +25,7 @@
         th { background: #e8f0fe; }
         .del-btn { background: #ff4d4d; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; width: auto; margin: 0; font-size: 10px; }
         .search-box { background: #fff; border: 2px solid #1a73e8 !important; font-weight: bold; }
+        .footer { text-align: center; font-size: 10px; color: #777; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -33,12 +34,13 @@
     <h1>GS Constructions</h1>
     
     <div id="login-section" style="text-align: center; padding: 50px 0;">
-        <button onclick="login()">Login with Google to Start</button>
+        <p>Please login to manage site data</p>
+        <button onclick="login()" style="width: auto; padding: 12px 30px;">Login with Google</button>
     </div>
 
     <div id="main-content" class="hidden">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <span id="user-name" style="font-weight: bold;"></span>
+            <span id="user-name" style="font-weight: bold; color: #1a73e8;"></span>
             <button onclick="logout()" class="btn-red" style="width: auto; padding: 5px 15px; margin: 0;">Logout</button>
         </div>
 
@@ -101,7 +103,7 @@
             <input type="number" id="tool-qty" placeholder="Quantity">
             <button onclick="addTool()" style="background: #f39c12;">Add Tool</button>
             <table id="tool-table">
-                <thead><tr><th>Date</th><th>Tool Name</th><th>ID/No</th><th>Qty</th><th>Action</th></tr></thead>
+                <thead><tr><th>Date</th><th>Tool</th><th>ID/No</th><th>Qty</th><th>Action</th></tr></thead>
                 <tbody id="tool-body"></tbody>
             </table>
         </div>
@@ -124,6 +126,7 @@
 </div>
 
 <script>
+    // Firebase Config
     const firebaseConfig = {
         apiKey: "AIzaSyDRDLw2bE_iG7OuE6diCGtrLmDePZStKr8",
         authDomain: "gsconstructions-3f4c9.firebaseapp.com",
@@ -134,10 +137,19 @@
     };
 
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth(), db = firebase.firestore(), provider = new firebase.auth.GoogleAuthProvider();
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const provider = new firebase.auth.GoogleAuthProvider();
+
     const originalTools = Array.from(document.getElementById('tool-name').options).map(opt => opt.text);
 
-    function login() { auth.signInWithRedirect(provider); }
+    // FIX: Using Popup instead of Redirect for better compatibility
+    function login() { 
+        auth.signInWithPopup(provider)
+            .then(() => { console.log("Logged In"); })
+            .catch(err => { alert("Login Error: " + err.message); });
+    }
+    
     function logout() { auth.signOut().then(() => location.reload()); }
 
     auth.onAuthStateChanged(user => {
@@ -146,7 +158,8 @@
             document.getElementById('main-content').classList.remove('hidden');
             document.getElementById('user-name').innerText = "User: " + user.displayName;
             const today = new Date().toISOString().split('T')[0];
-            document.getElementById('mat-date').value = today; document.getElementById('work-date').value = today;
+            document.getElementById('mat-date').value = today;
+            document.getElementById('work-date').value = today;
             loadData();
         }
     });
@@ -162,7 +175,13 @@
         const search = document.getElementById('tool-search').value.toLowerCase();
         const select = document.getElementById('tool-name');
         select.innerHTML = '';
-        originalTools.forEach(tool => { if (tool.toLowerCase().includes(search)) { const opt = document.createElement('option'); opt.text = tool; select.add(opt); } });
+        originalTools.forEach(tool => {
+            if (tool.toLowerCase().includes(search)) {
+                const opt = document.createElement('option');
+                opt.text = tool;
+                select.add(opt);
+            }
+        });
         toggleToolFields();
     }
 
@@ -177,7 +196,10 @@
         if (tool === 'O2 Cylinder' || tool === 'Welding Machine') {
             idContainer.classList.remove('hidden');
             document.getElementById('tool-id-label').innerText = tool === 'O2 Cylinder' ? "Cylinder Number" : "QT Number";
-        } else { idContainer.classList.add('hidden'); }
+        } else {
+            idContainer.classList.add('hidden');
+            document.getElementById('tool-id-val').value = "";
+        }
     }
 
     async function addMaterial() {
@@ -222,13 +244,14 @@
     function saveSiteName() { localStorage.setItem('gs_site', document.getElementById('site-name').value); }
 
     function generatePDF() {
-        const { jsPDF } = window.jspdf; const doc = new jsPDF();
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
         const site = document.getElementById('site-name').value || "Site Report";
-        doc.text("GS CONSTRUCTIONS - " + site, 14, 15);
-        doc.autoTable({ html: '#mat-table', startY: 25, columns: [0,1,2,3] });
-        doc.autoTable({ html: '#tool-table', startY: doc.lastAutoTable.finalY + 10, columns: [0,1,2,3] });
-        doc.autoTable({ html: '#worker-table', startY: doc.lastAutoTable.finalY + 10, columns: [0,1,2] });
-        doc.save(site + ".pdf");
+        doc.setFontSize(16); doc.text("GS CONSTRUCTIONS - " + site, 14, 15);
+        doc.autoTable({ html: '#mat-table', startY: 25, columns: [0, 1, 2, 3] });
+        doc.autoTable({ html: '#tool-table', startY: doc.lastAutoTable.finalY + 10, columns: [0, 1, 2, 3] });
+        doc.autoTable({ html: '#worker-table', startY: doc.lastAutoTable.finalY + 10, columns: [0, 1, 2] });
+        doc.save(site + "_Report.pdf");
     }
 </script>
 </body>
