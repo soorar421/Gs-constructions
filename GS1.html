@@ -168,7 +168,7 @@
             </datalist>
 
             <div class="flex-row">
-                <input type="number" id="equip-qty" placeholder="Quantity (എണ്ണം)">
+                <input type="number" id="equip-qty" placeholder="Quantity">
                 <input type="text" id="equip-id" placeholder="ID/No (e.g., QT 268)">
             </div>
 
@@ -357,7 +357,7 @@
         let mRows = '', totalW = 0;
         let mDataArray = [];
         mSnap.forEach(doc => mDataArray.push({id: doc.id, ...doc.data()}));
-        mDataArray.sort((a,b) => b.date.localeCompare(a.date)); // Sort by Date
+        mDataArray.sort((a,b) => b.date.localeCompare(a.date));
         
         mDataArray.forEach(d => {
             totalW += d.weight;
@@ -367,8 +367,6 @@
                 <button class="btn-circle btn-main" onclick="editMatEntry('${d.id}','${l}','${w}','${d.date}')"><i class="fas fa-pencil-alt"></i></button>
                 <button class="btn-circle btn-red" onclick="removeDoc('materials','${d.id}')"><i class="fas fa-trash"></i></button>
             </div></td></tr>`;
-            
-            // Push to PDF Array
             window.pdfMaterials.push([d.date, d.name, d.size, d.weight.toFixed(2)]);
         });
         document.getElementById('mat-list-body').innerHTML = mRows;
@@ -392,8 +390,6 @@
                     <button class="btn-circle btn-yellow" onclick="editEquipEntry('${e.id}','${e.name}','${e.qty}','${e.equipId}','${e.date}')"><i class="fas fa-pencil-alt"></i></button>
                     <button class="btn-circle btn-red" onclick="removeDoc('equipments','${e.id}')"><i class="fas fa-trash"></i></button>
                 </div></td></tr>`;
-                
-                // Push to PDF Array
                 window.pdfEquipments.push([e.date, e.name, e.equipId ? e.equipId : '-', e.qty]);
             });
             eRows += `</table>`;
@@ -407,6 +403,7 @@
             const d = doc.data();
             if(!groups[d.date]) groups[d.date] = [];
             groups[d.date].push({id: doc.id, ...d});
+            window.pdfWorkers.push([d.date, d.name, d.ot]); // Still keeping flat array for internal use
         });
         let wRows = '';
         Object.keys(groups).sort().reverse().forEach(date => {
@@ -417,9 +414,6 @@
                     <button class="btn-circle btn-green" onclick="editWorkEntry('${w.id}','${w.name}','${w.ot}','${w.date}')"><i class="fas fa-pencil-alt"></i></button>
                     <button class="btn-circle btn-red" onclick="removeDoc('workers','${w.id}')"><i class="fas fa-trash"></i></button>
                 </div></td></tr>`;
-                
-                // Push to PDF Array
-                window.pdfWorkers.push([w.date, w.name, w.ot]);
             });
             wRows += `</table>`;
         });
@@ -469,16 +463,41 @@
             currentY = doc.lastAutoTable.finalY + 15;
         }
 
-        // 3. Workers OT Table
+        // 3. Workers OT Table (Grouped by Date)
         if (window.pdfWorkers.length > 0) {
             doc.setFontSize(14); doc.setTextColor(30, 142, 62);
-            doc.text("3. Overtime Log", 14, currentY);
-            doc.autoTable({
-                startY: currentY + 4,
-                head: [['Date', 'Worker Name', 'OT Hours']],
-                body: window.pdfWorkers,
-                theme: 'grid',
-                headStyles: { fillColor: [30, 142, 62] }
+            doc.text("3. Overtime Log (Daily)", 14, currentY);
+            currentY += 8;
+
+            // Grouping logic for PDF
+            const grouped = {};
+            window.pdfWorkers.forEach(w => {
+                if(!grouped[w[0]]) grouped[w[0]] = [];
+                grouped[w[0]].push([w[1], w[2]]);
+            });
+
+            const sortedDates = Object.keys(grouped).sort().reverse();
+
+            sortedDates.forEach(date => {
+                // Add Date Heading
+                doc.setFontSize(11); doc.setTextColor(50);
+                doc.text("Date: " + date, 14, currentY);
+                
+                doc.autoTable({
+                    startY: currentY + 2,
+                    head: [['Worker Name', 'OT Hours']],
+                    body: grouped[date],
+                    theme: 'striped',
+                    headStyles: { fillColor: [30, 142, 62] },
+                    margin: { left: 14 }
+                });
+                currentY = doc.lastAutoTable.finalY + 10;
+                
+                // Check for page overflow
+                if(currentY > 270) {
+                    doc.addPage();
+                    currentY = 20;
+                }
             });
         }
 
