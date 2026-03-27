@@ -107,6 +107,7 @@
                     <tbody id="mat-list-body"></tbody>
                 </table>
             </div>
+            <button class="btn-main" onclick="generateMaterialPDF()" style="margin-top: 15px; font-size: 13px; height: 40px;"><i class="fas fa-file-pdf"></i> Export Material Log PDF</button>
         </div>
 
         <div class="section-card" style="border-top: 4px solid var(--accent);">
@@ -206,7 +207,6 @@
 
     let currentEditMatId = null, currentEditWorkId = null, currentEditEquipId = null;
     
-    // Arrays for PDF Export
     window.pdfMaterials = [];
     window.pdfEquipments = [];
     window.pdfWorkers = [];
@@ -347,12 +347,10 @@
         document.getElementById('site-name-input').value = localStorage.getItem('gs_pro_site') || "";
         updateSiteName();
         
-        // Reset PDF Arrays
         window.pdfMaterials = [];
         window.pdfEquipments = [];
         window.pdfWorkers = [];
 
-        // --- Materials ---
         const mSnap = await db.collection('materials').where('uid', '==', uid).get();
         let mRows = '', totalW = 0;
         let mDataArray = [];
@@ -372,7 +370,6 @@
         document.getElementById('mat-list-body').innerHTML = mRows;
         document.getElementById('grand-total').innerText = totalW.toFixed(2) + " KG";
 
-        // --- Equipments ---
         const eSnap = await db.collection('equipments').where('uid', '==', uid).get();
         const eGroups = {};
         eSnap.forEach(doc => {
@@ -396,14 +393,13 @@
         });
         document.getElementById('equip-grouped-list').innerHTML = eRows;
 
-        // --- Workers ---
         const wSnap = await db.collection('workers').where('uid', '==', uid).get();
         const groups = {};
         wSnap.forEach(doc => {
             const d = doc.data();
             if(!groups[d.date]) groups[d.date] = [];
             groups[d.date].push({id: doc.id, ...d});
-            window.pdfWorkers.push([d.date, d.name, d.ot]); // Still keeping flat array for internal use
+            window.pdfWorkers.push([d.date, d.name, d.ot]);
         });
         let wRows = '';
         Object.keys(groups).sort().reverse().forEach(date => {
@@ -420,12 +416,36 @@
         document.getElementById('worker-grouped-list').innerHTML = wRows;
     }
 
+    // --- NEW FUNCTION: Only Material PDF ---
+    function generateMaterialPDF() {
+        if (window.pdfMaterials.length === 0) return alert("No material log found to export");
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const site = document.getElementById('site-name-input').value || "Project";
+        
+        doc.setFontSize(22); doc.setTextColor(26, 115, 232);
+        doc.text("GS CONSTRUCTIONS - MATERIAL REPORT", 14, 20);
+        
+        doc.setFontSize(14); doc.setTextColor(100);
+        doc.text("Project: " + site, 14, 30);
+        doc.text("Total Weight: " + document.getElementById('grand-total').innerText, 14, 38);
+
+        doc.autoTable({
+            startY: 48,
+            head: [['Date', 'Item', 'Size', 'Weight (kg)']],
+            body: window.pdfMaterials,
+            theme: 'grid',
+            headStyles: { fillColor: [26, 115, 232] }
+        });
+
+        doc.save(site + "_Material_Log.pdf");
+    }
+
     function generateFullPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         const site = document.getElementById('site-name-input').value || "Project";
         
-        // Header
         doc.setFontSize(22); doc.setTextColor(26, 115, 232);
         doc.text("GS CONSTRUCTIONS - SITE REPORT", 14, 20);
         
@@ -435,7 +455,6 @@
         
         let currentY = 48;
 
-        // 1. Materials Table
         if (window.pdfMaterials.length > 0) {
             doc.setFontSize(14); doc.setTextColor(26, 115, 232);
             doc.text("1. Material Log", 14, currentY);
@@ -449,7 +468,6 @@
             currentY = doc.lastAutoTable.finalY + 15;
         }
 
-        // 2. Equipments Table
         if (window.pdfEquipments.length > 0) {
             doc.setFontSize(14); doc.setTextColor(245, 127, 23);
             doc.text("2. Tools & Equipments Log", 14, currentY);
@@ -463,13 +481,11 @@
             currentY = doc.lastAutoTable.finalY + 15;
         }
 
-        // 3. Workers OT Table (Grouped by Date)
         if (window.pdfWorkers.length > 0) {
             doc.setFontSize(14); doc.setTextColor(30, 142, 62);
             doc.text("3. Overtime Log (Daily)", 14, currentY);
             currentY += 8;
 
-            // Grouping logic for PDF
             const grouped = {};
             window.pdfWorkers.forEach(w => {
                 if(!grouped[w[0]]) grouped[w[0]] = [];
@@ -479,10 +495,8 @@
             const sortedDates = Object.keys(grouped).sort().reverse();
 
             sortedDates.forEach(date => {
-                // Add Date Heading
                 doc.setFontSize(11); doc.setTextColor(50);
                 doc.text("Date: " + date, 14, currentY);
-                
                 doc.autoTable({
                     startY: currentY + 2,
                     head: [['Worker Name', 'OT Hours']],
@@ -492,15 +506,9 @@
                     margin: { left: 14 }
                 });
                 currentY = doc.lastAutoTable.finalY + 10;
-                
-                // Check for page overflow
-                if(currentY > 270) {
-                    doc.addPage();
-                    currentY = 20;
-                }
+                if(currentY > 270) { doc.addPage(); currentY = 20; }
             });
         }
-
         doc.save(site + "_Full_Report.pdf");
     }
 </script>
