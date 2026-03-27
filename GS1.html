@@ -8,16 +8,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-    
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
-    
     <style>
         :root { --primary: #1a73e8; --secondary: #1e8e3e; --accent: #fbc02d; --danger: #d93025; --dark: #202124; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; margin: 0; padding: 10px; min-height: 100vh; display: flex; flex-direction: column; }
-        .container { max-width: 900px; margin: auto; background: white; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); overflow: hidden; flex: 1; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; margin: 0; padding: 10px; }
+        .container { max-width: 900px; margin: auto; background: white; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); overflow: hidden; }
         .header { background: linear-gradient(135deg, #1a73e8, #0d47a1); color: white; padding: 25px; text-align: center; }
         .site-banner { background: #fffde7; padding: 15px; text-align: center; font-size: 22px; font-weight: bold; color: #f57f17; border-bottom: 3px solid var(--accent); text-transform: uppercase; letter-spacing: 1px; }
         .section-card { margin: 15px; padding: 20px; border-radius: 15px; background: #fff; border: 1px solid #e0e0e0; position: relative; }
@@ -26,7 +23,6 @@
         input, select, button { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #ccc; border-radius: 10px; font-size: 15px; outline: none; box-sizing: border-box; }
         button { cursor: pointer; border: none; font-weight: bold; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
         button:active { transform: scale(0.97); }
-        button:disabled { background: #ccc !important; cursor: not-allowed; }
         .btn-main { background: var(--primary); color: white; }
         .btn-green { background: var(--secondary); color: white; }
         .btn-yellow { background: var(--accent); color: black; }
@@ -38,16 +34,11 @@
 
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th { background: #f8f9fa; padding: 12px; text-align: left; font-size: 12px; color: #70757a; }
-        td { padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; vertical-align: top; }
+        td { padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; }
         .btn-circle { width: 36px; height: 36px; border-radius: 50%; padding: 0; display: inline-flex; }
         .date-badge { background: var(--dark); color: white; padding: 6px 15px; border-radius: 50px; font-size: 12px; margin-top: 20px; display: inline-block; font-weight: bold; }
         .hidden { display: none; }
         .flex-row { display: flex; gap: 10px; }
-        
-        .footer-credit { text-align: center; padding: 20px; font-size: 12px; color: #70757a; font-weight: bold; letter-spacing: 1px; }
-        
-        /* Thumbnail style for area photo */
-        .area-thumb { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; border: 1px solid #ccc; margin-top: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -81,20 +72,7 @@
         <div class="section-card" style="border-top: 4px solid var(--primary);">
             <div class="section-title"><i class="fas fa-box-open"></i> Material Log</div>
             <input type="date" id="mat-date">
-            
-            <div class="flex-row">
-                <input type="text" id="mat-area" placeholder="Area Name (e.g. Pillar 1, Roof)">
-                <select id="mat-direction">
-                    <option value="">Select Direction</option>
-                    <option value="North (വടക്ക്)">North (വടക്ക്)</option>
-                    <option value="South (തെക്ക്)">South (തെക്ക്)</option>
-                    <option value="East (കിഴക്ക്)">East (കിഴക്ക്)</option>
-                    <option value="West (പടിഞ്ഞാറ്)">West (പടിഞ്ഞാറ്)</option>
-                </select>
-            </div>
-
-            <input type="file" id="mat-photo" accept="image/*" style="background: white; padding: 10px;">
-            <input type="hidden" id="hidden-photo-url"> <select id="mat-type" onchange="togglePlateInput()">
+            <select id="mat-type" onchange="togglePlateInput()">
                 <optgroup label="Beams">
                     <option value="46" data-type="linear">ISMB 300 (46 kg/m)</option>
                 </optgroup>
@@ -117,57 +95,98 @@
                     <option value="53.2" data-type="plate">CH Plate (53.2 kg/sq.m)</option>
                 </optgroup>
             </select>
-            
             <div id="plate-width-div" class="hidden">
                 <input type="number" id="mat-width" placeholder="Width in MM">
             </div>
             <input type="number" id="mat-length" placeholder="Length in MM">
-            
             <button id="mat-action-btn" class="btn-main" onclick="processMaterial()"><i class="fas fa-plus-circle"></i> Save Material</button>
             
             <div style="overflow-x:auto;">
                 <table id="mat-display-table">
-                    <thead><tr><th>Item Details</th><th>Location / Area</th><th>Weight</th><th>Actions</th></tr></thead>
+                    <thead><tr><th>Item</th><th>Size</th><th>Weight</th><th>Actions</th></tr></thead>
                     <tbody id="mat-list-body"></tbody>
                 </table>
             </div>
-            <button class="btn-main" onclick="generateMaterialPDF()" style="margin-top: 15px; font-size: 13px; height: 40px;"><i class="fas fa-file-pdf"></i> Export Material Log PDF</button>
         </div>
 
         <div class="section-card" style="border-top: 4px solid var(--accent);">
             <div class="section-title" style="color: #f57f17;"><i class="fas fa-tools"></i> Tools & Equipments Log</div>
             <input type="date" id="equip-date">
+            
             <input list="tools-list" id="equip-name" placeholder="Search or Type Tool/Equipment...">
             <datalist id="tools-list">
                 <option value="Chain Block">
                 <option value="Welding Machine">
                 <option value="Gas Cutter">
-                <option value="Drill Machine">
+                <option value="O2 Cylinder">
+                <option value="LPG Cylinder">
+                <option value="Welding Rod">
+                <option value="Cutting Wheel 4&quot;">
+                <option value="Cutting Wheel 7&quot;">
                 <option value="Grinding Machine">
+                <option value="Drill Machine">
+                <option value="Impact Wrench">
+                <option value="Pipe Wrench">
+                <option value="Adjustable Spanner">
+                <option value="Ring Spanner Set">
+                <option value="DE Spanner Set">
+                <option value="Allen Key Set">
+                <option value="Hammer Drill">
+                <option value="Sledge Hammer">
+                <option value="Ball Peen Hammer">
+                <option value="Chisel">
+                <option value="Measuring Tape">
+                <option value="Spirit Level">
+                <option value="Plumb Bob">
+                <option value="Right Angle">
+                <option value="Vernier Caliper">
+                <option value="Micrometer">
+                <option value="Pipe Cutter">
+                <option value="Pipe Bender">
+                <option value="Tube Bender">
+                <option value="Torque Wrench">
+                <option value="Files (Flat/Round)">
+                <option value="Wire Brush">
+                <option value="C-Clamp">
+                <option value="Bench Vice">
+                <option value="Anvil">
+                <option value="Hydraulic Jack">
+                <option value="Pulling Lift (Tirfor)">
+                <option value="D-Shackle">
+                <option value="Wire Rope Sling">
+                <option value="Nylon Sling">
+                <option value="Safety Belt (Full Body Harness)">
+                <option value="Safety Helmet">
+                <option value="Safety Shoes">
+                <option value="Welding Goggles">
+                <option value="Hand Gloves">
+                <option value="Face Shield">
+                <option value="Ear Plugs">
+                <option value="Fire Extinguisher">
+                <option value="Air Compressor">
+                <option value="Portable Generator">
             </datalist>
+
             <div class="flex-row">
                 <input type="number" id="equip-qty" placeholder="Quantity">
                 <input type="text" id="equip-id" placeholder="ID/No (e.g., QT 268)">
             </div>
+
             <button id="equip-action-btn" class="btn-yellow" onclick="processEquipment()"><i class="fas fa-toolbox"></i> Save Equipment</button>
             <div id="equip-grouped-list"></div>
         </div>
 
         <div class="section-card" style="border-top: 4px solid var(--secondary);">
-            <div class="section-title" style="color: var(--secondary);"><i class="fas fa-user-clock"></i> Workers Attendance</div>
+            <div class="section-title" style="color: var(--secondary);"><i class="fas fa-user-clock"></i> Overtime Log</div>
             <input type="date" id="work-date">
             <input type="text" id="worker-name" placeholder="Full Name of Worker">
             <input type="number" id="worker-ot" placeholder="Total OT Hours">
-            <button id="work-action-btn" class="btn-green" onclick="processWorker()"><i class="fas fa-user-check"></i> Save Entry</button>
+            <button id="work-action-btn" class="btn-green" onclick="processWorker()"><i class="fas fa-user-check"></i> Save OT Entry</button>
             <div id="worker-grouped-list"></div>
         </div>
 
         <button class="btn-main" onclick="generateFullPDF()" style="margin: 20px; width: calc(100% - 40px); background: var(--dark); height: 60px; font-size: 18px; border-radius: 15px;"><i class="fas fa-file-export"></i> EXPORT FULL PDF REPORT</button>
     </div>
-</div>
-
-<div class="footer-credit">
-    <i class="fas fa-code"></i> Designed by soorajrmaranadu
 </div>
 
 <script>
@@ -183,11 +202,11 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
-    const storage = firebase.storage(); // Initialized Storage
     const provider = new firebase.auth.GoogleAuthProvider();
 
     let currentEditMatId = null, currentEditWorkId = null, currentEditEquipId = null;
     
+    // Arrays for PDF Export
     window.pdfMaterials = [];
     window.pdfEquipments = [];
     window.pdfWorkers = [];
@@ -221,19 +240,14 @@
 
     async function processMaterial() {
         const date = document.getElementById('mat-date').value;
-        const area = document.getElementById('mat-area').value || "N/A";
-        const direction = document.getElementById('mat-direction').value || "";
-        const photoFile = document.getElementById('mat-photo').files[0];
-        
         const sel = document.getElementById('mat-type');
         const length = parseFloat(document.getElementById('mat-length').value);
-        
-        if(!length || !date) return alert("Fill Length and Date fields");
-        
+        if(!length || !date) return alert("Fill all fields");
+
         let weight = 0, sizeText = "";
         if(sel.options[sel.selectedIndex].getAttribute('data-type') === 'plate') {
             const width = parseFloat(document.getElementById('mat-width').value);
-            if(!width) return alert("Enter width for plate");
+            if(!width) return alert("Enter width");
             weight = ((length/1000)*(width/1000)*parseFloat(sel.value)).toFixed(2);
             sizeText = length + "x" + width + "mm";
         } else {
@@ -241,72 +255,36 @@
             sizeText = length + "mm";
         }
 
-        const btn = document.getElementById('mat-action-btn');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        const data = { date, name: sel.options[sel.selectedIndex].text, size: sizeText, weight: parseFloat(weight), uid: auth.currentUser.uid, ts: Date.now() };
 
-        try {
-            let photoUrl = document.getElementById('hidden-photo-url').value || "";
-
-            // Upload photo if selected
-            if(photoFile) {
-                const storageRef = storage.ref(`materials/${auth.currentUser.uid}/${Date.now()}_${photoFile.name}`);
-                await storageRef.put(photoFile);
-                photoUrl = await storageRef.getDownloadURL();
-            }
-
-            const data = { 
-                date, 
-                area,
-                direction,
-                photoUrl,
-                name: sel.options[sel.selectedIndex].text, 
-                size: sizeText, 
-                weight: parseFloat(weight), 
-                uid: auth.currentUser.uid, 
-                ts: Date.now() 
-            };
-
-            if(currentEditMatId) {
-                await db.collection('materials').doc(currentEditMatId).update(data);
-                currentEditMatId = null;
-            } else { 
-                await db.collection('materials').add(data); 
-            }
-
-            // Reset Form
-            document.getElementById('mat-length').value = "";
-            document.getElementById('mat-width').value = "";
-            document.getElementById('mat-area').value = "";
-            document.getElementById('mat-direction').value = "";
-            document.getElementById('mat-photo').value = "";
-            document.getElementById('hidden-photo-url').value = "";
-            
-            btn.innerHTML = '<i class="fas fa-plus-circle"></i> Save Material';
-            btn.disabled = false;
-            
-            refreshUI();
-        } catch (error) {
-            console.error(error);
-            alert("Error saving data. Make sure Firebase Storage rules are configured.");
-            btn.innerHTML = '<i class="fas fa-plus-circle"></i> Save Material';
-            btn.disabled = false;
+        if(currentEditMatId) {
+            await db.collection('materials').doc(currentEditMatId).update(data);
+            currentEditMatId = null;
+            document.getElementById('mat-action-btn').innerHTML = '<i class="fas fa-plus-circle"></i> Save Material';
+        } else {
+            await db.collection('materials').add(data);
         }
+        document.getElementById('mat-length').value = "";
+        document.getElementById('mat-width').value = "";
+        refreshUI();
     }
 
-    // Processing Equipment and Worker (Unchanged)
     async function processEquipment() {
         const date = document.getElementById('equip-date').value;
         const name = document.getElementById('equip-name').value;
         const qty = document.getElementById('equip-qty').value;
         const equipId = document.getElementById('equip-id').value;
+        
         if(!name || !date || !qty) return alert("Please enter Date, Tool Name and Quantity");
+
         const data = { date, name, qty, equipId, uid: auth.currentUser.uid, ts: Date.now() };
         if(currentEditEquipId) {
             await db.collection('equipments').doc(currentEditEquipId).update(data);
             currentEditEquipId = null;
             document.getElementById('equip-action-btn').innerHTML = '<i class="fas fa-toolbox"></i> Save Equipment';
-        } else { await db.collection('equipments').add(data); }
+        } else {
+            await db.collection('equipments').add(data);
+        }
         document.getElementById('equip-name').value = "";
         document.getElementById('equip-qty').value = "";
         document.getElementById('equip-id').value = "";
@@ -318,12 +296,15 @@
         const name = document.getElementById('worker-name').value;
         const ot = document.getElementById('worker-ot').value;
         if(!name || !date) return alert("Enter details");
+
         const data = { date, name, ot, uid: auth.currentUser.uid, ts: Date.now() };
         if(currentEditWorkId) {
             await db.collection('workers').doc(currentEditWorkId).update(data);
             currentEditWorkId = null;
-            document.getElementById('work-action-btn').innerHTML = '<i class="fas fa-user-check"></i> Save Entry';
-        } else { await db.collection('workers').add(data); }
+            document.getElementById('work-action-btn').innerHTML = '<i class="fas fa-user-check"></i> Save OT Entry';
+        } else {
+            await db.collection('workers').add(data);
+        }
         document.getElementById('worker-name').value = "";
         document.getElementById('worker-ot').value = "";
         refreshUI();
@@ -333,15 +314,11 @@
         if(confirm("Permanently delete this entry?")) { await db.collection(col).doc(id).delete(); refreshUI(); }
     }
 
-    function editMatEntry(id, len, wid, date, area, dir, pUrl) {
+    function editMatEntry(id, len, wid, date) {
         currentEditMatId = id;
         document.getElementById('mat-date').value = date;
         document.getElementById('mat-length').value = len;
         document.getElementById('mat-width').value = wid || "";
-        document.getElementById('mat-area').value = area || "";
-        document.getElementById('mat-direction').value = dir || "";
-        document.getElementById('hidden-photo-url').value = pUrl || "";
-        
         document.getElementById('mat-action-btn').innerHTML = '<i class="fas fa-save"></i> Update Material';
         window.scrollTo(0, document.getElementById('mat-date').offsetTop - 50);
     }
@@ -361,7 +338,7 @@
         document.getElementById('work-date').value = date;
         document.getElementById('worker-name').value = name;
         document.getElementById('worker-ot').value = ot;
-        document.getElementById('work-action-btn').innerHTML = '<i class="fas fa-save"></i> Update Entry';
+        document.getElementById('work-action-btn').innerHTML = '<i class="fas fa-save"></i> Update OT Entry';
         window.scrollTo(0, document.getElementById('work-date').offsetTop - 50);
     }
 
@@ -369,46 +346,44 @@
         const uid = auth.currentUser.uid;
         document.getElementById('site-name-input').value = localStorage.getItem('gs_pro_site') || "";
         updateSiteName();
-        window.pdfMaterials = []; window.pdfEquipments = []; window.pdfWorkers = [];
+        
+        // Reset PDF Arrays
+        window.pdfMaterials = [];
+        window.pdfEquipments = [];
+        window.pdfWorkers = [];
 
-        // Materials Load
+        // --- Materials ---
         const mSnap = await db.collection('materials').where('uid', '==', uid).get();
-        let mRows = '', totalW = 0; let mDataArray = [];
+        let mRows = '', totalW = 0;
+        let mDataArray = [];
         mSnap.forEach(doc => mDataArray.push({id: doc.id, ...doc.data()}));
-        mDataArray.sort((a,b) => b.date.localeCompare(a.date));
+        mDataArray.sort((a,b) => b.date.localeCompare(a.date)); // Sort by Date
         
         mDataArray.forEach(d => {
-            totalW += d.weight; 
-            const l = d.size.split('x')[0].replace('mm',''), w = d.size.split('x')[1] ? d.size.split('x')[1].replace('mm','') : "";
+            totalW += d.weight;
+            const l = d.size.split('x')[0], w = d.size.split('x')[1] || "";
+            mRows += `<tr><td>${d.name}<br><small>${d.date}</small></td><td>${d.size}</td><td>${d.weight} kg</td>
+            <td><div style="display:flex;gap:5px;">
+                <button class="btn-circle btn-main" onclick="editMatEntry('${d.id}','${l}','${w}','${d.date}')"><i class="fas fa-pencil-alt"></i></button>
+                <button class="btn-circle btn-red" onclick="removeDoc('materials','${d.id}')"><i class="fas fa-trash"></i></button>
+            </div></td></tr>`;
             
-            // Safe strings for edit function
-            const safeArea = d.area ? d.area.replace(/'/g, "\\'") : '';
-            const safeDir = d.direction ? d.direction.replace(/'/g, "\\'") : '';
-            const safeUrl = d.photoUrl ? d.photoUrl.replace(/'/g, "\\'") : '';
-            
-            // Image Thumbnail HTML
-            const imgHtml = d.photoUrl ? `<a href="${d.photoUrl}" target="_blank"><img src="${d.photoUrl}" class="area-thumb"></a>` : '';
-
-            mRows += `<tr>
-                <td><strong>${d.name}</strong><br><small>${d.size}</small><br><small style="color:gray">${d.date}</small></td>
-                <td><span style="color:#1e8e3e; font-weight:bold;">${d.area || '-'}</span><br><small>${d.direction || ''}</small><br>${imgHtml}</td>
-                <td style="font-weight:bold; color:var(--primary);">${d.weight} kg</td>
-                <td><div style="display:flex;gap:5px;">
-                    <button class="btn-circle btn-main" onclick="editMatEntry('${d.id}','${l}','${w}','${d.date}','${safeArea}','${safeDir}','${safeUrl}')"><i class="fas fa-pencil-alt"></i></button>
-                    <button class="btn-circle btn-red" onclick="removeDoc('materials','${d.id}')"><i class="fas fa-trash"></i></button>
-                </div></td>
-            </tr>`;
-            
-            const areaDirText = (d.area || "N/A") + (d.direction ? ` (${d.direction})` : "");
-            window.pdfMaterials.push([d.date, d.name, areaDirText, d.size, d.weight.toFixed(2)]);
+            // Push to PDF Array
+            window.pdfMaterials.push([d.date, d.name, d.size, d.weight.toFixed(2)]);
         });
         document.getElementById('mat-list-body').innerHTML = mRows;
         document.getElementById('grand-total').innerText = totalW.toFixed(2) + " KG";
 
-        // Equipments Load
+        // --- Equipments ---
         const eSnap = await db.collection('equipments').where('uid', '==', uid).get();
-        const eGroups = {}; eSnap.forEach(doc => { const d = doc.data(); if(!eGroups[d.date]) eGroups[d.date] = []; eGroups[d.date].push({id: doc.id, ...d}); });
-        let eRows = ''; Object.keys(eGroups).sort().reverse().forEach(date => {
+        const eGroups = {};
+        eSnap.forEach(doc => {
+            const d = doc.data();
+            if(!eGroups[d.date]) eGroups[d.date] = [];
+            eGroups[d.date].push({id: doc.id, ...d});
+        });
+        let eRows = '';
+        Object.keys(eGroups).sort().reverse().forEach(date => {
             eRows += `<div class="date-badge" style="background: #f57f17;"><i class="far fa-calendar-alt"></i> ${date}</div><table>`;
             eGroups[date].forEach(e => {
                 const idText = e.equipId ? `<br><small style="color:gray;">ID/No: ${e.equipId}</small>` : '';
@@ -417,15 +392,24 @@
                     <button class="btn-circle btn-yellow" onclick="editEquipEntry('${e.id}','${e.name}','${e.qty}','${e.equipId}','${e.date}')"><i class="fas fa-pencil-alt"></i></button>
                     <button class="btn-circle btn-red" onclick="removeDoc('equipments','${e.id}')"><i class="fas fa-trash"></i></button>
                 </div></td></tr>`;
+                
+                // Push to PDF Array
                 window.pdfEquipments.push([e.date, e.name, e.equipId ? e.equipId : '-', e.qty]);
-            }); eRows += `</table>`;
+            });
+            eRows += `</table>`;
         });
         document.getElementById('equip-grouped-list').innerHTML = eRows;
 
-        // Workers Load
+        // --- Workers ---
         const wSnap = await db.collection('workers').where('uid', '==', uid).get();
-        const groups = {}; wSnap.forEach(doc => { const d = doc.data(); if(!groups[d.date]) groups[d.date] = []; groups[d.date].push({id: doc.id, ...d}); window.pdfWorkers.push([d.date, d.name, d.ot]); });
-        let wRows = ''; Object.keys(groups).sort().reverse().forEach(date => {
+        const groups = {};
+        wSnap.forEach(doc => {
+            const d = doc.data();
+            if(!groups[d.date]) groups[d.date] = [];
+            groups[d.date].push({id: doc.id, ...d});
+        });
+        let wRows = '';
+        Object.keys(groups).sort().reverse().forEach(date => {
             wRows += `<div class="date-badge"><i class="far fa-calendar-alt"></i> ${date}</div><table>`;
             groups[date].forEach(w => {
                 wRows += `<tr><td>${w.name}</td><td style="width:50px;">OT: ${w.ot}</td>
@@ -433,52 +417,71 @@
                     <button class="btn-circle btn-green" onclick="editWorkEntry('${w.id}','${w.name}','${w.ot}','${w.date}')"><i class="fas fa-pencil-alt"></i></button>
                     <button class="btn-circle btn-red" onclick="removeDoc('workers','${w.id}')"><i class="fas fa-trash"></i></button>
                 </div></td></tr>`;
-            }); wRows += `</table>`;
+                
+                // Push to PDF Array
+                window.pdfWorkers.push([w.date, w.name, w.ot]);
+            });
+            wRows += `</table>`;
         });
         document.getElementById('worker-grouped-list').innerHTML = wRows;
     }
 
-    function generateMaterialPDF() {
-        if (window.pdfMaterials.length === 0) return alert("No material log found");
-        const { jsPDF } = window.jspdf; const doc = new jsPDF();
-        const site = document.getElementById('site-name-input').value || "Project";
-        doc.setFontSize(22); doc.setTextColor(26, 115, 232); doc.text("GS CONSTRUCTIONS - MATERIAL REPORT", 14, 20);
-        doc.setFontSize(14); doc.setTextColor(100); doc.text("Project: " + site, 14, 30);
-        doc.text("Total Weight: " + document.getElementById('grand-total').innerText, 14, 38);
-        
-        // Updated PDF table header to include Area & Dir
-        doc.autoTable({ startY: 48, head: [['Date', 'Item', 'Area (Dir)', 'Size', 'Weight (kg)']], body: window.pdfMaterials, theme: 'grid', headStyles: { fillColor: [26, 115, 232] } });
-        doc.save(site + "_Material_Log.pdf");
-    }
-
     function generateFullPDF() {
-        const { jsPDF } = window.jspdf; const doc = new jsPDF();
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
         const site = document.getElementById('site-name-input').value || "Project";
-        doc.setFontSize(22); doc.setTextColor(26, 115, 232); doc.text("GS CONSTRUCTIONS - SITE REPORT", 14, 20);
-        doc.setFontSize(14); doc.setTextColor(100); doc.text("Project: " + site, 14, 30);
+        
+        // Header
+        doc.setFontSize(22); doc.setTextColor(26, 115, 232);
+        doc.text("GS CONSTRUCTIONS - SITE REPORT", 14, 20);
+        
+        doc.setFontSize(14); doc.setTextColor(100);
+        doc.text("Project: " + site, 14, 30);
+        doc.text("Total Material Weight: " + document.getElementById('grand-total').innerText, 14, 38);
+        
         let currentY = 48;
+
+        // 1. Materials Table
         if (window.pdfMaterials.length > 0) {
-            doc.setFontSize(14); doc.setTextColor(26, 115, 232); doc.text("1. Material Log", 14, currentY);
-            doc.autoTable({ startY: currentY + 4, head: [['Date', 'Item', 'Area (Dir)', 'Size', 'Weight (kg)']], body: window.pdfMaterials, theme: 'grid', headStyles: { fillColor: [26, 115, 232] } });
+            doc.setFontSize(14); doc.setTextColor(26, 115, 232);
+            doc.text("1. Material Log", 14, currentY);
+            doc.autoTable({
+                startY: currentY + 4,
+                head: [['Date', 'Item', 'Size', 'Weight (kg)']],
+                body: window.pdfMaterials,
+                theme: 'grid',
+                headStyles: { fillColor: [26, 115, 232] }
+            });
             currentY = doc.lastAutoTable.finalY + 15;
         }
+
+        // 2. Equipments Table
         if (window.pdfEquipments.length > 0) {
-            doc.setFontSize(14); doc.setTextColor(245, 127, 23); doc.text("2. Tools & Equipments Log", 14, currentY);
-            doc.autoTable({ startY: currentY + 4, head: [['Date', 'Tool / Equipment', 'ID/No', 'Qty']], body: window.pdfEquipments, theme: 'grid', headStyles: { fillColor: [245, 127, 23] } });
+            doc.setFontSize(14); doc.setTextColor(245, 127, 23);
+            doc.text("2. Tools & Equipments Log", 14, currentY);
+            doc.autoTable({
+                startY: currentY + 4,
+                head: [['Date', 'Tool / Equipment', 'ID/No', 'Qty']],
+                body: window.pdfEquipments,
+                theme: 'grid',
+                headStyles: { fillColor: [245, 127, 23] }
+            });
             currentY = doc.lastAutoTable.finalY + 15;
         }
+
+        // 3. Workers OT Table
         if (window.pdfWorkers.length > 0) {
-            doc.setFontSize(14); doc.setTextColor(30, 142, 62); doc.text("3. Workers Attendance (Daily)", 14, currentY);
-            currentY += 8; const grouped = {};
-            window.pdfWorkers.forEach(w => { if(!grouped[w[0]]) grouped[w[0]] = []; grouped[w[0]].push([w[1], w[2]]); });
-            const sortedDates = Object.keys(grouped).sort().reverse();
-            sortedDates.forEach(date => {
-                doc.setFontSize(11); doc.setTextColor(50); doc.text("Date: " + date, 14, currentY);
-                doc.autoTable({ startY: currentY + 2, head: [['Worker Name', 'OT Hours']], body: grouped[date], theme: 'striped', headStyles: { fillColor: [30, 142, 62] }, margin: { left: 14 } });
-                currentY = doc.lastAutoTable.finalY + 10;
-                if(currentY > 270) { doc.addPage(); currentY = 20; }
+            doc.setFontSize(14); doc.setTextColor(30, 142, 62);
+            doc.text("3. Overtime Log", 14, currentY);
+            doc.autoTable({
+                startY: currentY + 4,
+                head: [['Date', 'Worker Name', 'OT Hours']],
+                body: window.pdfWorkers,
+                theme: 'grid',
+                headStyles: { fillColor: [30, 142, 62] }
             });
         }
+
         doc.save(site + "_Full_Report.pdf");
     }
 </script>
