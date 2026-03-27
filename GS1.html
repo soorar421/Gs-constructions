@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GS Constructions - Smart Manager</title>
+    <title>GS Constructions - Site Pro Manager</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -12,70 +12,111 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
-        :root { --primary: #1a73e8; --secondary: #1e8e3e; --danger: #d93025; --warning: #f9ab00; }
-        body { font-family: 'Poppins', sans-serif; background: #f4f7f6; padding: 10px; margin: 0; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: var(--primary); font-size: 26px; display: flex; justify-content: center; align-items: center; gap: 10px; }
-        .section-card { background: #ffffff; padding: 15px; border-radius: 15px; margin-bottom: 20px; border-top: 5px solid var(--primary); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        :root { --primary: #1a73e8; --secondary: #1e8e3e; --accent: #fbc02d; --danger: #d93025; --dark: #202124; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; margin: 0; padding: 10px; }
+        .container { max-width: 900px; margin: auto; background: white; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #1a73e8, #0d47a1); color: white; padding: 25px; text-align: center; }
+        .site-banner { background: #fffde7; padding: 15px; text-align: center; font-size: 22px; font-weight: bold; color: #f57f17; border-bottom: 3px solid var(--accent); text-transform: uppercase; letter-spacing: 1px; }
+        .section-card { margin: 15px; padding: 20px; border-radius: 15px; background: #fff; border: 1px solid #e0e0e0; position: relative; }
+        .section-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; color: var(--primary); }
+        
+        input, select, button { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #ccc; border-radius: 10px; font-size: 15px; outline: none; box-sizing: border-box; }
+        button { cursor: pointer; border: none; font-weight: bold; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        button:active { transform: scale(0.97); }
+        .btn-main { background: var(--primary); color: white; }
+        .btn-green { background: var(--secondary); color: white; }
+        .btn-red { background: var(--danger); color: white; }
+        
+        .summary-card { background: linear-gradient(135deg, #e3f2fd, #bbdefb); margin: 15px; padding: 20px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; border-left: 6px solid var(--primary); }
+        .total-label { font-size: 14px; font-weight: bold; color: #1565c0; }
+        .total-value { font-size: 26px; font-weight: bold; color: #0d47a1; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background: #f8f9fa; padding: 12px; text-align: left; font-size: 12px; color: #70757a; }
+        td { padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; }
+        .btn-circle { width: 36px; height: 36px; border-radius: 50%; padding: 0; display: inline-flex; }
+        .date-badge { background: var(--dark); color: white; padding: 6px 15px; border-radius: 50px; font-size: 12px; margin-top: 20px; display: inline-block; font-weight: bold; }
         .hidden { display: none; }
-        input, select, button { width: 100%; padding: 12px; margin: 8px 0; border: 1.5px solid #eee; border-radius: 10px; outline: none; transition: 0.3s; }
-        input:focus { border-color: var(--primary); }
-        button { cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px; border: none; }
-        .btn-add { background: var(--primary); color: white; }
-        .btn-edit { background: var(--warning); color: white; width: auto; padding: 5px 10px; font-size: 12px; }
-        .btn-del { background: var(--danger); color: white; width: auto; padding: 5px 10px; font-size: 12px; }
-        .total-badge { background: #e8f0fe; color: var(--primary); padding: 10px; border-radius: 10px; font-weight: bold; text-align: center; margin: 10px 0; font-size: 18px; border: 1px dashed var(--primary); }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; border-radius: 10px; overflow: hidden; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #f0f0f0; }
-        th { background: #f8f9fa; color: #555; }
-        .date-header { background: var(--primary); color: white; padding: 8px 15px; margin-top: 20px; border-radius: 10px; font-size: 14px; font-weight: bold; display: flex; justify-content: space-between; }
-        .action-btns { display: flex; gap: 5px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1><i class="fas fa-helmet-safety"></i> GS CONSTRUCTIONS</h1>
-    
-    <div id="login-section" style="text-align: center; padding: 60px 0;">
-        <button onclick="login()" class="btn-add" style="width: auto; padding: 15px 40px;"><i class="fab fa-google"></i> Login with Google</button>
+    <div class="header">
+        <h1><i class="fas fa-industry"></i> GS CONSTRUCTIONS</h1>
+    </div>
+
+    <div id="login-section" style="padding: 100px 20px; text-align: center;">
+        <button class="btn-main" onclick="login()" style="width: auto; padding: 15px 45px; font-size: 18px; border-radius: 50px;"><i class="fab fa-google"></i> Login to Manager</button>
     </div>
 
     <div id="main-content" class="hidden">
-        <div style="display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 10px; border-radius: 12px;">
-            <span id="user-name" style="font-weight: bold; color: var(--primary);"><i class="fas fa-user-circle"></i></span>
-            <button onclick="logout()" class="btn-del" style="margin:0;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        <div class="site-banner" id="site-header-text">NO SITE SELECTED</div>
+
+        <div style="padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; background: #eceff1; border-bottom: 1px solid #cfd8dc;">
+            <span id="user-display" style="font-size: 13px; font-weight: bold; color: #455a64;"></span>
+            <button onclick="logout()" class="btn-red" style="width: auto; padding: 5px 12px; margin: 0; font-size: 11px; border-radius: 5px;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+
+        <div class="summary-card">
+            <div class="total-label"><i class="fas fa-weight-hanging"></i> TOTAL MATERIAL WEIGHT</div>
+            <div class="total-value" id="grand-total">0.00 KG</div>
         </div>
 
         <div class="section-card">
-            <h3><i class="fas fa-truck-loading" style="color:var(--primary)"></i> 1. Material Entry</h3>
+            <input type="text" id="site-name-input" placeholder="Type Site/Project Name..." style="border: 2px solid var(--primary); text-align: center; font-weight: bold; font-size: 18px;" oninput="updateSiteName()">
+        </div>
+
+        <div class="section-card" style="border-top: 4px solid var(--primary);">
+            <div class="section-title"><i class="fas fa-box-open"></i> Material Log</div>
             <input type="date" id="mat-date">
-            <select id="mat-type" onchange="togglePlateFields()">
-                <option value="46" data-type="linear">ISMB 300 (46 kg/m)</option>
-                <option value="22.3" data-type="linear">ISMC 200 (22.3 kg/m)</option>
-                <option value="78.5" data-type="plate">10mm Plate (78.5 kg/sq.m)</option>
-                <option value="47.1" data-type="plate">6mm Plate (47.1 kg/sq.m)</option>
+            <select id="mat-type" onchange="togglePlateInput()">
+                <optgroup label="Beams">
+                    <option value="46" data-type="linear">ISMB 300 (46 kg/m)</option>
+                </optgroup>
+                <optgroup label="Channels">
+                    <option value="22.3" data-type="linear">ISMC 200 (22.3 kg/m)</option>
+                    <option value="13.1" data-type="linear">ISMC 125 (13.1 kg/m)</option>
+                </optgroup>
+                <optgroup label="Angles">
+                    <option value="19.7" data-type="linear">ISA 130 (19.7 kg/m)</option>
+                    <option value="14.9" data-type="linear">ISA 100 (14.9 kg/m)</option>
+                    <option value="11" data-type="linear">ISA 75 (11 kg/m)</option>
+                    <option value="4.5" data-type="linear">ISA 50 (4.5 kg/m)</option>
+                </optgroup>
+                <optgroup label="Flats">
+                    <option value="4.7" data-type="linear">ISF 100 (4.7 kg/m)</option>
+                    <option value="1.5" data-type="linear">ISF 32 (1.5 kg/m)</option>
+                </optgroup>
+                <optgroup label="Plates">
+                    <option value="78.5" data-type="plate">10mm Plate (78.5 kg/sq.m)</option>
+                    <option value="53.2" data-type="plate">CH Plate (53.2 kg/sq.m)</option>
+                </optgroup>
             </select>
-            <div id="plate-dims" class="hidden">
+            <div id="plate-width-div" class="hidden">
                 <input type="number" id="mat-width" placeholder="Width in MM">
             </div>
             <input type="number" id="mat-length" placeholder="Length in MM">
-            <button onclick="addMaterial()" class="btn-add" id="mat-btn"><i class="fas fa-plus"></i> Add Material</button>
+            <button id="mat-action-btn" class="btn-main" onclick="processMaterial()"><i class="fas fa-plus-circle"></i> Save Material</button>
             
-            <div class="total-badge" id="total-weight-display">Total Weight: 0.00 KG</div>
-            <div id="mat-list-container"></div>
+            <div style="overflow-x:auto;">
+                <table id="mat-display-table">
+                    <thead><tr><th>Item</th><th>Size</th><th>Weight</th><th>Actions</th></tr></thead>
+                    <tbody id="mat-list-body"></tbody>
+                </table>
+            </div>
         </div>
 
-        <div class="section-card" style="border-top-color: var(--secondary);">
-            <h3><i class="fas fa-users" style="color:var(--secondary)"></i> 2. Worker OT List</h3>
+        <div class="section-card" style="border-top: 4px solid var(--secondary);">
+            <div class="section-title" style="color: var(--secondary);"><i class="fas fa-user-clock"></i> Overtime Log</div>
             <input type="date" id="work-date">
-            <input type="text" id="worker-name" placeholder="Worker Name">
-            <input type="number" id="ot-hours" placeholder="OT Hours">
-            <button onclick="addWorker()" class="btn-add" id="work-btn" style="background:var(--secondary)"><i class="fas fa-user-plus"></i> Add Worker</button>
-            <div id="worker-list-container"></div>
+            <input type="text" id="worker-name" placeholder="Full Name of Worker">
+            <input type="number" id="worker-ot" placeholder="Total OT Hours">
+            <button id="work-action-btn" class="btn-green" onclick="processWorker()"><i class="fas fa-user-check"></i> Save OT Entry</button>
+            <div id="worker-grouped-list"></div>
         </div>
 
-        <button onclick="generatePDF()" class="btn-green" style="background:var(--secondary);"><i class="fas fa-file-pdf"></i> Download Report</button>
+        <button class="btn-main" onclick="generateFullPDF()" style="margin: 20px; width: calc(100% - 40px); background: var(--dark); height: 60px; font-size: 18px; border-radius: 15px;"><i class="fas fa-file-export"></i> EXPORT PDF REPORT</button>
     </div>
 </div>
 
@@ -90,9 +131,11 @@
     };
 
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth(), db = firebase.firestore(), provider = new firebase.auth.GoogleAuthProvider();
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const provider = new firebase.auth.GoogleAuthProvider();
 
-    let editId = null;
+    let currentEditMatId = null, currentEditWorkId = null;
 
     function login() { auth.signInWithPopup(provider); }
     function logout() { auth.signOut().then(() => location.reload()); }
@@ -101,90 +144,152 @@
         if (user) {
             document.getElementById('login-section').classList.add('hidden');
             document.getElementById('main-content').classList.remove('hidden');
-            document.getElementById('user-name').innerHTML = `<i class="fas fa-user"></i> ${user.displayName}`;
-            loadData();
+            document.getElementById('user-display').innerText = "Active User: " + user.displayName;
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('mat-date').value = today;
+            document.getElementById('work-date').value = today;
+            refreshUI();
         }
     });
 
-    function togglePlateFields() {
-        const type = document.getElementById('mat-type').options[document.getElementById('mat-type').selectedIndex].getAttribute('data-type');
-        document.getElementById('plate-dims').classList.toggle('hidden', type !== 'plate');
+    function togglePlateInput() {
+        const isPlate = document.getElementById('mat-type').options[document.getElementById('mat-type').selectedIndex].getAttribute('data-type') === 'plate';
+        document.getElementById('plate-width-div').classList.toggle('hidden', !isPlate);
     }
 
-    async function addMaterial() {
-        const date = document.getElementById('mat-date').value, sel = document.getElementById('mat-type'), len = parseFloat(document.getElementById('mat-length').value);
-        if (!len || !date) return alert("Fill all fields");
-        let wt = 0, size = len + "mm", width = 0;
-        if (sel.options[sel.selectedIndex].getAttribute('data-type') === 'plate') {
-            width = parseFloat(document.getElementById('mat-width').value);
-            wt = ((len/1000)*(width/1000)*parseFloat(sel.value)).toFixed(2);
-            size = `${len}x${width}mm`;
-        } else { wt = ((len/1000)*parseFloat(sel.value)).toFixed(2); }
-
-        const data = { date, name: sel.options[sel.selectedIndex].text, size, weight: parseFloat(wt), uid: auth.currentUser.uid, ts: Date.now(), rawLen: len, rawWidth: width, typeVal: sel.value };
-        
-        if(editId) { await db.collection('materials').doc(editId).update(data); editId = null; document.getElementById('mat-btn').innerHTML = '<i class="fas fa-plus"></i> Add Material'; }
-        else { await db.collection('materials').add(data); }
-        loadData();
+    function updateSiteName() {
+        const val = document.getElementById('site-name-input').value;
+        document.getElementById('site-header-text').innerText = val || "NO SITE SELECTED";
+        localStorage.setItem('gs_pro_site', val);
     }
 
-    async function addWorker() {
-        const date = document.getElementById('work-date').value, name = document.getElementById('worker-name').value, ot = document.getElementById('ot-hours').value;
-        if (!date || !name) return alert("Fill details");
-        const data = { date, name, ot, uid: auth.currentUser.uid, ts: Date.now() };
-        if(editId) { await db.collection('workers').doc(editId).update(data); editId = null; document.getElementById('work-btn').innerHTML = '<i class="fas fa-user-plus"></i> Add Worker'; }
-        else { await db.collection('workers').add(data); }
-        loadData();
-    }
+    async function processMaterial() {
+        const date = document.getElementById('mat-date').value;
+        const sel = document.getElementById('mat-type');
+        const length = parseFloat(document.getElementById('mat-length').value);
+        if(!length || !date) return alert("Fill all fields");
 
-    async function editItem(col, id, type) {
-        editId = id;
-        const doc = await db.collection(col).doc(id).get();
-        const d = doc.data();
-        if(type === 'mat') {
-            document.getElementById('mat-date').value = d.date;
-            document.getElementById('mat-length').value = d.rawLen;
-            document.getElementById('mat-type').value = d.typeVal;
-            if(d.rawWidth > 0) { document.getElementById('mat-width').value = d.rawWidth; togglePlateFields(); }
-            document.getElementById('mat-btn').innerHTML = '<i class="fas fa-save"></i> Update Material';
+        let weight = 0, sizeText = "";
+        if(sel.options[sel.selectedIndex].getAttribute('data-type') === 'plate') {
+            const width = parseFloat(document.getElementById('mat-width').value);
+            if(!width) return alert("Enter width");
+            weight = ((length/1000)*(width/1000)*parseFloat(sel.value)).toFixed(2);
+            sizeText = length + "x" + width + "mm";
         } else {
-            document.getElementById('work-date').value = d.date;
-            document.getElementById('worker-name').value = d.name;
-            document.getElementById('ot-hours').value = d.ot;
-            document.getElementById('work-btn').innerHTML = '<i class="fas fa-save"></i> Update Worker';
+            weight = ((length/1000)*parseFloat(sel.value)).toFixed(2);
+            sizeText = length + "mm";
         }
-        window.scrollTo(0,0);
+
+        const data = { date, name: sel.options[sel.selectedIndex].text, size: sizeText, weight: parseFloat(weight), uid: auth.currentUser.uid, ts: Date.now() };
+
+        if(currentEditMatId) {
+            await db.collection('materials').doc(currentEditMatId).update(data);
+            currentEditMatId = null;
+            document.getElementById('mat-action-btn').innerHTML = '<i class="fas fa-plus-circle"></i> Save Material';
+        } else {
+            await db.collection('materials').add(data);
+        }
+        document.getElementById('mat-length').value = "";
+        document.getElementById('mat-width').value = "";
+        refreshUI();
     }
 
-    async function deleteItem(col, id) { if(confirm("Delete?")) { await db.collection(col).doc(id).delete(); loadData(); } }
+    async function processWorker() {
+        const date = document.getElementById('work-date').value;
+        const name = document.getElementById('worker-name').value;
+        const ot = document.getElementById('worker-ot').value;
+        if(!name || !date) return alert("Enter details");
 
-    async function loadData() {
+        const data = { date, name, ot, uid: auth.currentUser.uid, ts: Date.now() };
+        if(currentEditWorkId) {
+            await db.collection('workers').doc(currentEditWorkId).update(data);
+            currentEditWorkId = null;
+            document.getElementById('work-action-btn').innerHTML = '<i class="fas fa-user-check"></i> Save OT Entry';
+        } else {
+            await db.collection('workers').add(data);
+        }
+        document.getElementById('worker-name').value = "";
+        document.getElementById('worker-ot').value = "";
+        refreshUI();
+    }
+
+    async function removeDoc(col, id) {
+        if(confirm("Permanently delete this?")) { await db.collection(col).doc(id).delete(); refreshUI(); }
+    }
+
+    function editMatEntry(id, len, wid, date) {
+        currentEditMatId = id;
+        document.getElementById('mat-date').value = date;
+        document.getElementById('mat-length').value = len;
+        document.getElementById('mat-width').value = wid || "";
+        document.getElementById('mat-action-btn').innerHTML = '<i class="fas fa-save"></i> Update Material';
+        window.scrollTo(0, 350);
+    }
+
+    function editWorkEntry(id, name, ot, date) {
+        currentEditWorkId = id;
+        document.getElementById('work-date').value = date;
+        document.getElementById('worker-name').value = name;
+        document.getElementById('worker-ot').value = ot;
+        document.getElementById('work-action-btn').innerHTML = '<i class="fas fa-save"></i> Update OT Entry';
+        window.scrollTo(0, 700);
+    }
+
+    async function refreshUI() {
         const uid = auth.currentUser.uid;
-        const mSnap = await db.collection('materials').where('uid', '==', uid).get();
-        let matHTML = '<table><thead><tr><th>Item</th><th>Size</th><th>KG</th><th>Actions</th></tr></thead><tbody>', totalWt = 0;
-        mSnap.forEach(doc => {
-            const d = doc.data(); totalWt += d.weight;
-            matHTML += `<tr><td>${d.name}</td><td>${d.size}</td><td>${d.weight}</td><td class="action-btns"><button class="btn-edit" onclick="editItem('materials','${doc.id}','mat')"><i class="fas fa-edit"></i></button><button class="btn-del" onclick="deleteItem('materials','${doc.id}')"><i class="fas fa-trash"></i></button></td></tr>`;
-        });
-        document.getElementById('mat-list-container').innerHTML = matHTML + '</tbody></table>';
-        document.getElementById('total-weight-display').innerText = `Total Material Weight: ${totalWt.toFixed(2)} KG`;
+        document.getElementById('site-name-input').value = localStorage.getItem('gs_pro_site') || "";
+        updateSiteName();
 
-        const wSnap = await db.collection('workers').where('uid', '==', uid).get();
-        const grouped = {}; wSnap.forEach(doc => { const d = doc.data(); if (!grouped[d.date]) grouped[d.date] = []; grouped[d.date].push({id: doc.id, ...d}); });
-        let workHTML = '';
-        Object.keys(grouped).sort().reverse().forEach(date => {
-            workHTML += `<div class="date-header">${date}</div><table><tbody>`;
-            grouped[date].forEach(w => { workHTML += `<tr><td>${w.name}</td><td>OT: ${w.ot}</td><td class="action-btns"><button class="btn-edit" onclick="editItem('workers','${w.id}','work')"><i class="fas fa-edit"></i></button><button class="btn-del" onclick="deleteItem('workers','${w.id}')"><i class="fas fa-trash"></i></button></td></tr>`; });
-            workHTML += `</tbody></table>`;
+        // Materials
+        const mSnap = await db.collection('materials').where('uid', '==', uid).get();
+        let mRows = '', totalW = 0;
+        mSnap.forEach(doc => {
+            const d = doc.data();
+            totalW += d.weight;
+            const l = d.size.split('x')[0], w = d.size.split('x')[1] || "";
+            mRows += `<tr><td>${d.name}</td><td>${d.size}</td><td>${d.weight} kg</td>
+            <td><div style="display:flex;gap:5px;">
+                <button class="btn-circle btn-main" onclick="editMatEntry('${doc.id}','${l}','${w}','${d.date}')"><i class="fas fa-pencil-alt"></i></button>
+                <button class="btn-circle btn-red" onclick="removeDoc('materials','${doc.id}')"><i class="fas fa-trash"></i></button>
+            </div></td></tr>`;
         });
-        document.getElementById('worker-list-container').innerHTML = workHTML;
+        document.getElementById('mat-list-body').innerHTML = mRows;
+        document.getElementById('grand-total').innerText = totalW.toFixed(2) + " KG";
+
+        // Workers
+        const wSnap = await db.collection('workers').where('uid', '==', uid).get();
+        const groups = {};
+        wSnap.forEach(doc => {
+            const d = doc.data();
+            if(!groups[d.date]) groups[d.date] = [];
+            groups[d.date].push({id: doc.id, ...d});
+        });
+        let wRows = '';
+        Object.keys(groups).sort().reverse().forEach(date => {
+            wRows += `<div class="date-badge"><i class="far fa-calendar-alt"></i> ${date}</div><table>`;
+            groups[date].forEach(w => {
+                wRows += `<tr><td>${w.name}</td><td style="width:50px;">OT: ${w.ot}</td>
+                <td style="width:90px;"><div style="display:flex;gap:5px;">
+                    <button class="btn-circle btn-green" onclick="editWorkEntry('${w.id}','${w.name}','${w.ot}','${w.date}')"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="btn-circle btn-red" onclick="removeDoc('workers','${w.id}')"><i class="fas fa-trash"></i></button>
+                </div></td></tr>`;
+            });
+            wRows += `</table>`;
+        });
+        document.getElementById('worker-grouped-list').innerHTML = wRows;
     }
 
-    function generatePDF() {
-        const { jsPDF } = window.jspdf; const doc = new jsPDF();
-        doc.setFontSize(18); doc.setTextColor(26, 115, 232); doc.text("GS CONSTRUCTIONS SITE REPORT", 14, 20);
-        doc.autoTable({ html: '#mat-list-container table', startY: 30, headStyles: {fillColor: [26, 115, 232]} });
-        doc.save("GS_Site_Report.pdf");
+    function generateFullPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const site = document.getElementById('site-name-input').value || "Project";
+        doc.setFontSize(22); doc.setTextColor(26, 115, 232);
+        doc.text("GS CONSTRUCTIONS - SITE REPORT", 14, 20);
+        doc.setFontSize(14); doc.setTextColor(100);
+        doc.text("Project: " + site, 14, 32);
+        doc.text("Total Material: " + document.getElementById('grand-total').innerText, 14, 42);
+        doc.autoTable({ html: '#mat-display-table', startY: 50 });
+        doc.save(site + "_Report.pdf");
     }
 </script>
 </body>
