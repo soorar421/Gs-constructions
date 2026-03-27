@@ -34,7 +34,7 @@
     <h1>GS Constructions</h1>
     
     <div id="login-section" style="text-align: center; padding: 50px 0;">
-        <p>Please login to manage site data</p>
+        <p>Login to start managing your site data</p>
         <button onclick="login()" style="width: auto; padding: 12px 30px;">Login with Google</button>
     </div>
 
@@ -143,11 +143,8 @@
 
     const originalTools = Array.from(document.getElementById('tool-name').options).map(opt => opt.text);
 
-    // FIX: Using Popup instead of Redirect for better compatibility
     function login() { 
-        auth.signInWithPopup(provider)
-            .then(() => { console.log("Logged In"); })
-            .catch(err => { alert("Login Error: " + err.message); });
+        auth.signInWithPopup(provider).then(() => { console.log("Success"); }).catch(err => { alert("Error: " + err.message); });
     }
     
     function logout() { auth.signOut().then(() => location.reload()); }
@@ -232,12 +229,16 @@
 
     async function loadData() {
         const uid = auth.currentUser.uid;
-        const mS = await db.collection('materials').where('uid', '==', uid).orderBy('ts', 'desc').get();
+        // Removing order temporarily to fix loading issue
+        const mS = await db.collection('materials').where('uid', '==', uid).get();
         document.getElementById('mat-body').innerHTML = mS.docs.map(d => `<tr><td>${d.data().date}</td><td>${d.data().name}</td><td>${d.data().size}</td><td>${d.data().weight}</td><td><button class="del-btn" onclick="deleteItem('materials','${d.id}')">Del</button></td></tr>`).join('');
-        const tS = await db.collection('tools').where('uid', '==', uid).orderBy('ts', 'desc').get();
+        
+        const tS = await db.collection('tools').where('uid', '==', uid).get();
         document.getElementById('tool-body').innerHTML = tS.docs.map(d => `<tr><td>${d.data().date}</td><td>${d.data().name}</td><td>${d.data().idVal}</td><td>${d.data().qty}</td><td><button class="del-btn" onclick="deleteItem('tools','${d.id}')">Del</button></td></tr>`).join('');
-        const wS = await db.collection('workers').where('uid', '==', uid).orderBy('ts', 'desc').get();
+        
+        const wS = await db.collection('workers').where('uid', '==', uid).get();
         document.getElementById('worker-body').innerHTML = wS.docs.map(d => `<tr><td>${d.data().date}</td><td>${d.data().name}</td><td>${d.data().ot}</td><td><button class="del-btn" onclick="deleteItem('workers','${d.id}')">Del</button></td></tr>`).join('');
+        
         document.getElementById('site-name').value = localStorage.getItem('gs_site') || "";
     }
 
