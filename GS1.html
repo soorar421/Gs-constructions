@@ -69,7 +69,6 @@
         <div class="section-card" style="border-top: 4px solid var(--primary);">
             <div class="section-title"><i class="fas fa-box-open"></i> Material Log</div>
             <input type="date" id="mat-date">
-            
             <div class="flex-row">
                 <input type="text" id="mat-area" placeholder="Area Name (eg: Area A)">
                 <select id="mat-direction">
@@ -81,40 +80,18 @@
                     <option value="Center">Center</option>
                 </select>
             </div>
-
             <select id="mat-type" onchange="togglePlateInput()">
-                <optgroup label="Beams">
-                    <option value="46" data-type="linear">ISMB 300 (46 kg/m)</option>
-                </optgroup>
-                <optgroup label="Channels">
-                    <option value="22.3" data-type="linear">ISMC 200 (22.3 kg/m)</option>
-                    <option value="13.1" data-type="linear">ISMC 125 (13.1 kg/m)</option>
-                </optgroup>
-                <optgroup label="Angles">
-                    <option value="19.7" data-type="linear">ISA 130 (19.7 kg/m)</option>
-                    <option value="14.9" data-type="linear">ISA 100 (14.9 kg/m)</option>
-                    <option value="11" data-type="linear">ISA 75 (11 kg/m)</option>
-                    <option value="4.5" data-type="linear">ISA 50 (4.5 kg/m)</option>
-                </optgroup>
-                <optgroup label="Flats">
-                    <option value="4.7" data-type="linear">ISF 100 (4.7 kg/m)</option>
-                    <option value="1.5" data-type="linear">ISF 32 (1.5 kg/m)</option>
-                </optgroup>
-                <optgroup label="Plates">
-                    <option value="78.5" data-type="plate">10mm Plate (78.5 kg/sq.m)</option>
-                    <option value="53.2" data-type="plate">CH Plate (53.2 kg/sq.m)</option>
-                </optgroup>
+                <optgroup label="Beams"><option value="46" data-type="linear">ISMB 300 (46 kg/m)</option></optgroup>
+                <optgroup label="Channels"><option value="22.3" data-type="linear">ISMC 200 (22.3 kg/m)</option><option value="13.1" data-type="linear">ISMC 125 (13.1 kg/m)</option></optgroup>
+                <optgroup label="Angles"><option value="19.7" data-type="linear">ISA 130 (19.7 kg/m)</option><option value="14.9" data-type="linear">ISA 100 (14.9 kg/m)</option><option value="11" data-type="linear">ISA 75 (11 kg/m)</option><option value="4.5" data-type="linear">ISA 50 (4.5 kg/m)</option></optgroup>
+                <optgroup label="Flats"><option value="4.7" data-type="linear">ISF 100 (4.7 kg/m)</option><option value="1.5" data-type="linear">ISF 32 (1.5 kg/m)</option></optgroup>
+                <optgroup label="Plates"><option value="78.5" data-type="plate">10mm Plate (78.5 kg/sq.m)</option><option value="53.2" data-type="plate">CH Plate (53.2 kg/sq.m)</option></optgroup>
             </select>
-
-            <div id="plate-width-div" class="hidden">
-                <input type="number" id="mat-width" placeholder="Width in MM">
-            </div>
-            
+            <div id="plate-width-div" class="hidden"><input type="number" id="mat-width" placeholder="Width in MM"></div>
             <div class="flex-row">
                 <input type="number" id="mat-length" placeholder="Length in MM">
                 <input type="number" id="mat-qty" placeholder="Quantity" value="1">
             </div>
-
             <button id="mat-action-btn" class="btn-main" onclick="processMaterial()"><i class="fas fa-plus-circle"></i> Save Material</button>
             <div id="mat-grouped-display" style="margin-top: 15px;"></div>
             <button class="btn-main" onclick="generateMaterialPDF()" style="margin-top: 15px; font-size: 13px; height: 40px;"><i class="fas fa-file-pdf"></i> Export Material Log PDF</button>
@@ -126,11 +103,11 @@
             <input list="tools-list" id="equip-name" placeholder="Search or Type Tool/Equipment...">
             <datalist id="tools-list">
                 <option value="Switch Board">
-                <option value="Chain Block"><option value="Welding Machine"><option value="Gas Cutter"><option value="O2 Cylinder"><option value="LPG Cylinder"><option value="Welding Rod"><option value="Cutting Wheel 4&quot;"><option value="Cutting Wheel 7&quot;"><option value="Grinding Machine"><option value="Drill Machine"><option value="Impact Wrench"><option value="Pipe Wrench"><option value="Adjustable Spanner"><option value="Ring Spanner Set"><option value="DE Spanner Set"><option value="Allen Key Set"><option value="Hammer Drill"><option value="Sledge Hammer"><option value="Ball Peen Hammer"><option value="Chisel"><option value="Measuring Tape"><option value="Spirit Level"><option value="Plumb Bob"><option value="Right Angle"><option value="Vernier Caliper"><option value="Micrometer"><option value="Pipe Cutter"><option value="Pipe Bender"><option value="Tube Bender"><option value="Torque Wrench"><option value="Files (Flat/Round)"><option value="Wire Brush"><option value="C-Clamp"><option value="Bench Vice"><option value="Anvil"><option value="Hydraulic Jack"><option value="Pulling Lift (Tirfor)"><option value="D-Shackle"><option value="Wire Rope Sling"><option value="Nylon Sling"><option value="Safety Belt (Full Body Harness)"><option value="Safety Helmet"><option value="Safety Shoes"><option value="Welding Goggles"><option value="Hand Gloves"><option value="Face Shield"><option value="Ear Plugs"><option value="Fire Extinguisher"><option value="Air Compressor"><option value="Portable Generator">
+                <option value="Oxygen Cylinder"><option value="LPG Cylinder"><option value="Welding Machine"><option value="Chain Block"><option value="Gas Cutter"><option value="O2 Cylinder"><option value="Welding Rod"><option value="Cutting Wheel 4&quot;"><option value="Cutting Wheel 7&quot;"><option value="Grinding Machine"><option value="Drill Machine"><option value="Impact Wrench"><option value="Pipe Wrench"><option value="Adjustable Spanner"><option value="Ring Spanner Set"><option value="DE Spanner Set"><option value="Allen Key Set"><option value="Hammer Drill"><option value="Sledge Hammer"><option value="Ball Peen Hammer"><option value="Chisel"><option value="Measuring Tape"><option value="Spirit Level"><option value="Plumb Bob"><option value="Right Angle"><option value="Vernier Caliper"><option value="Micrometer"><option value="Pipe Cutter"><option value="Pipe Bender"><option value="Tube Bender"><option value="Torque Wrench"><option value="Files (Flat/Round)"><option value="Wire Brush"><option value="C-Clamp"><option value="Bench Vice"><option value="Anvil"><option value="Hydraulic Jack"><option value="Pulling Lift (Tirfor)"><option value="D-Shackle"><option value="Wire Rope Sling"><option value="Nylon Sling"><option value="Safety Belt (Full Body Harness)"><option value="Safety Helmet"><option value="Safety Shoes"><option value="Welding Goggles"><option value="Hand Gloves"><option value="Face Shield"><option value="Ear Plugs"><option value="Fire Extinguisher"><option value="Air Compressor"><option value="Portable Generator">
             </datalist>
             <div class="flex-row">
+                <input type="text" id="equip-id" placeholder="ID/No (eg: 4466, 6858, 8758)" oninput="autoCalcQty()">
                 <input type="number" id="equip-qty" placeholder="Quantity">
-                <input type="text" id="equip-id" placeholder="ID/No (e.g., QT 268)">
             </div>
             <button id="equip-action-btn" class="btn-yellow" onclick="processEquipment()"><i class="fas fa-toolbox"></i> Save Equipment</button>
             <div id="equip-grouped-list"></div>
@@ -173,6 +150,17 @@
         if(!dateStr) return "";
         const [y, m, d] = dateStr.split('-');
         return `${d}-${m}-${y}`;
+    }
+
+    function autoCalcQty() {
+        const idVal = document.getElementById('equip-id').value;
+        if(idVal.trim() === "") {
+            document.getElementById('equip-qty').value = "";
+            return;
+        }
+        // Count comma separated items
+        const ids = idVal.split(',').filter(item => item.trim() !== "");
+        document.getElementById('equip-qty').value = ids.length;
     }
 
     function login() { auth.signInWithPopup(provider); }
@@ -343,10 +331,8 @@
         const site = document.getElementById('site-name-input').value || "Project";
         doc.setFontSize(18); doc.setTextColor(26, 115, 232); doc.text("GS CONSTRUCTIONS - MATERIAL LOG", 14, 20);
         doc.setFontSize(11); doc.setTextColor(100); doc.text("Project: " + site + " | Total: " + document.getElementById('grand-total').innerText, 14, 28);
-        
         const areaGrouped = {};
         window.pdfMaterials.forEach(m => { if(!areaGrouped[m.area]) areaGrouped[m.area] = []; areaGrouped[m.area].push([formatToDisplayDate(m.date), m.direction, m.name, m.size, m.qty, m.weight]); });
-        
         let yPos = 35;
         Object.keys(areaGrouped).sort().forEach(area => {
             if(yPos > 250) { doc.addPage(); yPos = 20; }
