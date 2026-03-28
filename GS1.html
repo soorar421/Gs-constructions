@@ -154,11 +154,7 @@
 
     function autoCalcQty() {
         const idVal = document.getElementById('equip-id').value;
-        if(idVal.trim() === "") {
-            document.getElementById('equip-qty').value = "";
-            return;
-        }
-        // Count comma separated items
+        if(idVal.trim() === "") { document.getElementById('equip-qty').value = ""; return; }
         const ids = idVal.split(',').filter(item => item.trim() !== "");
         document.getElementById('equip-qty').value = ids.length;
     }
@@ -282,7 +278,7 @@
         mSnap.forEach(doc => {
             const d = doc.data(); if(!mAreaGroups[d.area]) mAreaGroups[d.area] = [];
             mAreaGroups[d.area].push({id: doc.id, ...d}); totalW += d.weight;
-            window.pdfMaterials.push({ date: d.date, area: d.area, direction: d.direction || '-', name: d.name, size: d.size, qty: d.qty, weight: d.weight.toFixed(2) });
+            window.pdfMaterials.push({ date: d.date, area: d.area, direction: d.direction || '-', name: d.name, size: d.size, qty: d.qty, weight: parseFloat(d.weight) });
         });
         let mHTML = '';
         Object.keys(mAreaGroups).sort().forEach(area => {
@@ -331,15 +327,35 @@
         const site = document.getElementById('site-name-input').value || "Project";
         doc.setFontSize(18); doc.setTextColor(26, 115, 232); doc.text("GS CONSTRUCTIONS - MATERIAL LOG", 14, 20);
         doc.setFontSize(11); doc.setTextColor(100); doc.text("Project: " + site + " | Total: " + document.getElementById('grand-total').innerText, 14, 28);
+        
+        // Area-wise grouping
         const areaGrouped = {};
-        window.pdfMaterials.forEach(m => { if(!areaGrouped[m.area]) areaGrouped[m.area] = []; areaGrouped[m.area].push([formatToDisplayDate(m.date), m.direction, m.name, m.size, m.qty, m.weight]); });
+        window.pdfMaterials.forEach(m => { if(!areaGrouped[m.area]) areaGrouped[m.area] = []; areaGrouped[m.area].push([formatToDisplayDate(m.date), m.direction, m.name, m.size, m.qty, m.weight.toFixed(2)]); });
+        
         let yPos = 35;
         Object.keys(areaGrouped).sort().forEach(area => {
-            if(yPos > 250) { doc.addPage(); yPos = 20; }
+            if(yPos > 240) { doc.addPage(); yPos = 20; }
             doc.setFontSize(12); doc.setTextColor(0); doc.text("Area: " + area, 14, yPos);
             doc.autoTable({ startY: yPos + 2, head: [['Date', 'Dir', 'Item', 'Size', 'Qty', 'Weight (kg)']], body: areaGrouped[area], theme: 'grid', headStyles: { fillColor: [26, 115, 232] }, styles: { fontSize: 8 } });
             yPos = doc.lastAutoTable.finalY + 12;
         });
+
+        // NEW: Material-wise Summary Calculation
+        const materialSummary = {};
+        window.pdfMaterials.forEach(m => {
+            if (!materialSummary[m.name]) materialSummary[m.name] = { totalWeight: 0, totalQty: 0 };
+            materialSummary[m.name].totalWeight += m.weight;
+            materialSummary[m.name].totalQty += parseFloat(m.qty);
+        });
+
+        const summaryBody = Object.keys(materialSummary).sort().map(name => [
+            name, materialSummary[name].totalQty, materialSummary[name].totalWeight.toFixed(2) + " kg"
+        ]);
+
+        if(yPos > 220) { doc.addPage(); yPos = 20; }
+        doc.setFontSize(14); doc.setTextColor(26, 115, 232); doc.text("MATERIAL SUMMARY (TOTALS)", 14, yPos);
+        doc.autoTable({ startY: yPos + 4, head: [['Material Name', 'Total Quantity', 'Total Weight']], body: summaryBody, theme: 'grid', headStyles: { fillColor: [21, 101, 192] }, styles: { fontSize: 9, fontStyle: 'bold' } });
+
         doc.save(site + "_Material_Log.pdf");
     }
 
@@ -354,9 +370,9 @@
             doc.setFontSize(14); doc.setTextColor(26, 115, 232); doc.text("1. Material Log (Area Wise)", 14, currentY);
             currentY += 8;
             const areaGrouped = {};
-            window.pdfMaterials.forEach(m => { if(!areaGrouped[m.area]) areaGrouped[m.area] = []; areaGrouped[m.area].push([formatToDisplayDate(m.date), m.direction, m.name, m.size, m.qty, m.weight]); });
+            window.pdfMaterials.forEach(m => { if(!areaGrouped[m.area]) areaGrouped[m.area] = []; areaGrouped[m.area].push([formatToDisplayDate(m.date), m.direction, m.name, m.size, m.qty, m.weight.toFixed(2)]); });
             Object.keys(areaGrouped).sort().forEach(area => {
-                if(currentY > 260) { doc.addPage(); currentY = 20; }
+                if(currentY > 250) { doc.addPage(); currentY = 20; }
                 doc.setFontSize(10); doc.setTextColor(0); doc.text("Area: " + area, 14, currentY);
                 doc.autoTable({ startY: currentY + 2, head: [['Date', 'Dir', 'Item', 'Size', 'Qty', 'Weight']], body: areaGrouped[area], theme: 'grid', headStyles: { fillColor: [26, 115, 232] }, styles: { fontSize: 7 } });
                 currentY = doc.lastAutoTable.finalY + 10;
@@ -377,7 +393,7 @@
             const grouped = {};
             window.pdfWorkers.forEach(w => { if(!grouped[w.date]) grouped[w.date] = []; grouped[w.date].push([w.name, w.ot]); });
             Object.keys(grouped).sort().reverse().forEach(date => {
-                if(currentY > 260) { doc.addPage(); currentY = 20; }
+                if(currentY > 250) { doc.addPage(); currentY = 20; }
                 doc.setFontSize(10); doc.setTextColor(50); doc.text("Date: " + formatToDisplayDate(date), 14, currentY);
                 doc.autoTable({ startY: currentY + 2, head: [['Worker Name', 'OT Hours']], body: grouped[date], theme: 'striped', headStyles: { fillColor: [30, 142, 62] }, styles: { fontSize: 8 } });
                 currentY = doc.lastAutoTable.finalY + 10;
