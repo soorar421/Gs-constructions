@@ -415,23 +415,27 @@
             currentY = doc.lastAutoTable.finalY + 15;
         }
 
-        // 3. Workers Attendance (Grouped Separately by Date as requested)
+        // 3. Workers Attendance (Grouped Separately by Date)
         if (window.pdfWorkers.length > 0) {
             if(currentY > 250) { doc.addPage(); currentY = 20; }
             doc.setFontSize(14); doc.setTextColor(30, 142, 62); doc.text("3. Workers Attendance", 14, currentY);
-            currentY += 6;
+            currentY += 8;
             
             const workersGroupedByDate = {};
             window.pdfWorkers.forEach(w => {
-                const fDate = formatToDisplayDate(w.date);
-                if (!workersGroupedByDate[fDate]) workersGroupedByDate[fDate] = [];
-                workersGroupedByDate[fDate].push([w.name, w.ot]);
+                if (!workersGroupedByDate[w.date]) workersGroupedByDate[w.date] = [];
+                workersGroupedByDate[w.date].push([w.name, w.ot]);
             });
             
-            // Loop through dates and create separate tables
-            Object.keys(workersGroupedByDate).sort((a,b) => b.localeCompare(a)).forEach(dateKey => {
+            // Loop through dates (newest dates first) and create separate tables
+            Object.keys(workersGroupedByDate).sort().reverse().forEach(dateKey => {
+                const fDate = formatToDisplayDate(dateKey);
                 if(currentY > 260) { doc.addPage(); currentY = 20; }
-                doc.setFontSize(11); doc.setTextColor(0); doc.text("Date: " + dateKey, 14, currentY);
+                
+                doc.setFontSize(11); 
+                doc.setTextColor(0); 
+                doc.text("Date: " + fDate, 14, currentY);
+                
                 doc.autoTable({
                     startY: currentY + 2,
                     head: [['Worker Name', 'Total OT Hours']],
