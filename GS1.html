@@ -37,9 +37,23 @@
         .hidden { display: none; }
         .flex-row { display: flex; gap: 10px; }
         .footer-credit { text-align: center; padding: 20px; font-size: 12px; color: #70757a; font-weight: bold; letter-spacing: 1px; }
+        .photo-link { color: #1a73e8; text-decoration: none; font-size: 11px; font-weight: bold; display: block; margin-top: 5px; }
+        
+        /* Loading Overlay Style */
+        #loading-overlay { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(255,255,255,0.9); z-index: 9999; flex-direction: column; 
+            align-items: center; justify-content: center; 
+        }
     </style>
 </head>
 <body>
+
+<div id="loading-overlay">
+    <i class="fas fa-spinner fa-spin fa-3x" style="color: var(--primary);"></i>
+    <p style="margin-top: 15px; font-weight: bold; color: var(--dark);">Uploading Photo... Please wait</p>
+</div>
+
 <div class="container">
     <div class="header">
         <h1><i class="fas fa-industry"></i> GS CONSTRUCTIONS</h1>
@@ -80,6 +94,12 @@
                     <option value="Center">Center</option>
                 </select>
             </div>
+            
+            <div style="background: #f8f9fa; padding: 10px; border-radius: 10px; border: 1px dashed #ccc; margin: 5px 0;">
+                <label style="font-size: 12px; color: #5f6368; font-weight: bold; display: block; margin-bottom: 5px;"><i class="fas fa-camera"></i> Attach Material Photo (Optional)</label>
+                <input type="file" id="mat-photo" accept="image/*" style="padding: 5px; font-size: 12px; background: white; border: none;">
+            </div>
+
             <select id="mat-type" onchange="togglePlateInput()">
                 <optgroup label="Beams"><option value="46" data-type="linear">ISMB 300 (46 kg/m)</option></optgroup>
                 <optgroup label="Channels"><option value="22.3" data-type="linear">ISMC 200 (22.3 kg/m)</option><option value="13.1" data-type="linear">ISMC 125 (13.1 kg/m)</option></optgroup>
@@ -106,7 +126,7 @@
                 <option value="Oxygen Cylinder"><option value="LPG Cylinder"><option value="Welding Machine"><option value="Chain Block"><option value="Gas Cutter"><option value="O2 Cylinder"><option value="Welding Rod"><option value="Cutting Wheel 4&quot;"><option value="Cutting Wheel 7&quot;"><option value="Grinding Machine"><option value="Drill Machine"><option value="Impact Wrench"><option value="Pipe Wrench"><option value="Adjustable Spanner"><option value="Ring Spanner Set"><option value="DE Spanner Set"><option value="Allen Key Set"><option value="Hammer Drill"><option value="Sledge Hammer"><option value="Ball Peen Hammer"><option value="Chisel"><option value="Measuring Tape"><option value="Spirit Level"><option value="Plumb Bob"><option value="Right Angle"><option value="Vernier Caliper"><option value="Micrometer"><option value="Pipe Cutter"><option value="Pipe Bender"><option value="Tube Bender"><option value="Torque Wrench"><option value="Files (Flat/Round)"><option value="Wire Brush"><option value="C-Clamp"><option value="Bench Vice"><option value="Anvil"><option value="Hydraulic Jack"><option value="Pulling Lift (Tirfor)"><option value="D-Shackle"><option value="Wire Rope Sling"><option value="Nylon Sling"><option value="Safety Belt (Full Body Harness)"><option value="Safety Helmet"><option value="Safety Shoes"><option value="Welding Goggles"><option value="Hand Gloves"><option value="Face Shield"><option value="Ear Plugs"><option value="Fire Extinguisher"><option value="Air Compressor"><option value="Portable Generator">
             </datalist>
             <div class="flex-row">
-                <input type="text" id="equip-id" placeholder="ID/No (eg: 4466, 6858, 8758)" oninput="autoCalcQty()">
+                <input type="text" id="equip-id" placeholder="ID/No (eg: 4466, 6858)" oninput="autoCalcQty()">
                 <input type="number" id="equip-qty" placeholder="Quantity">
             </div>
             <button id="equip-action-btn" class="btn-yellow" onclick="processEquipment()"><i class="fas fa-toolbox"></i> Save Equipment</button>
@@ -138,6 +158,8 @@
         appId: "1:622430516475:web:17fd96908472cbd665ec5e"
     };
 
+    const IMGBB_API_KEY = "b48c7ab06cc8ad41b1ec1188653de8be";
+
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
@@ -145,19 +167,6 @@
 
     let currentEditMatId = null, currentEditWorkId = null, currentEditEquipId = null;
     window.pdfMaterials = []; window.pdfEquipments = []; window.pdfWorkers = [];
-
-    function formatToDisplayDate(dateStr) {
-        if(!dateStr) return "";
-        const [y, m, d] = dateStr.split('-');
-        return `${d}-${m}-${y}`;
-    }
-
-    function autoCalcQty() {
-        const idVal = document.getElementById('equip-id').value;
-        if(idVal.trim() === "") { document.getElementById('equip-qty').value = ""; return; }
-        const ids = idVal.split(',').filter(item => item.trim() !== "");
-        document.getElementById('equip-qty').value = ids.length;
-    }
 
     function login() { auth.signInWithPopup(provider); }
     function logout() { auth.signOut().then(() => location.reload()); }
@@ -175,15 +184,24 @@
         }
     });
 
-    function togglePlateInput() {
-        const isPlate = document.getElementById('mat-type').options[document.getElementById('mat-type').selectedIndex].getAttribute('data-type') === 'plate';
-        document.getElementById('plate-width-div').classList.toggle('hidden', !isPlate);
-    }
-
-    function updateSiteName() {
-        const val = document.getElementById('site-name-input').value;
-        document.getElementById('site-header-text').innerText = val || "NO SITE SELECTED";
-        localStorage.setItem('gs_pro_site', val);
+    async function uploadToImgBB(file) {
+        document.getElementById('loading-overlay').style.display = 'flex';
+        let formData = new FormData();
+        formData.append("image", file);
+        try {
+            const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+                method: "POST",
+                body: formData
+            });
+            const result = await response.json();
+            document.getElementById('loading-overlay').style.display = 'none';
+            if(result.success) return result.data.url;
+            return null;
+        } catch (error) {
+            alert("Photo upload failed! Check connection.");
+            document.getElementById('loading-overlay').style.display = 'none';
+            return null;
+        }
     }
 
     async function processMaterial() {
@@ -193,7 +211,15 @@
         const sel = document.getElementById('mat-type');
         const length = parseFloat(document.getElementById('mat-length').value);
         const qty = parseFloat(document.getElementById('mat-qty').value) || 1;
-        if(!length || !date) return alert("Fill all fields");
+        const photoFile = document.getElementById('mat-photo').files[0];
+
+        if(!length || !date) return alert("Please enter date and length");
+
+        let uploadedUrl = "";
+        if(photoFile) {
+            uploadedUrl = await uploadToImgBB(photoFile);
+        }
+
         let unitWeight = 0, sizeText = "";
         if(sel.options[sel.selectedIndex].getAttribute('data-type') === 'plate') {
             const width = parseFloat(document.getElementById('mat-width').value);
@@ -204,14 +230,24 @@
             unitWeight = ((length/1000)*parseFloat(sel.value));
             sizeText = length + "mm";
         }
+        
         const totalWeight = (unitWeight * qty).toFixed(2);
-        const data = { date, area, direction: dir, name: sel.options[sel.selectedIndex].text, size: sizeText, qty, weight: parseFloat(totalWeight), uid: auth.currentUser.uid, ts: Date.now() };
+        const data = { 
+            date, area, direction: dir, name: sel.options[sel.selectedIndex].text, 
+            size: sizeText, qty, weight: parseFloat(totalWeight), 
+            photoUrl: uploadedUrl || "", uid: auth.currentUser.uid, ts: Date.now() 
+        };
+
         if(currentEditMatId) {
             await db.collection('materials').doc(currentEditMatId).update(data);
             currentEditMatId = null;
             document.getElementById('mat-action-btn').innerHTML = '<i class="fas fa-plus-circle"></i> Save Material';
         } else { await db.collection('materials').add(data); }
-        document.getElementById('mat-length').value = ""; document.getElementById('mat-width').value = ""; document.getElementById('mat-qty').value = "1";
+
+        document.getElementById('mat-length').value = ""; 
+        document.getElementById('mat-width').value = ""; 
+        document.getElementById('mat-qty').value = "1";
+        document.getElementById('mat-photo').value = ""; // Clear file input
         refreshUI();
     }
 
@@ -220,13 +256,10 @@
         const name = document.getElementById('equip-name').value;
         const qty = document.getElementById('equip-qty').value;
         const equipId = document.getElementById('equip-id').value;
-        if(!name || !date || !qty) return alert("Fill all fields");
+        if(!date || !name || !qty) return alert("Fill all fields");
         const data = { date, name, qty, equipId, uid: auth.currentUser.uid, ts: Date.now() };
-        if(currentEditEquipId) {
-            await db.collection('equipments').doc(currentEditEquipId).update(data);
-            currentEditEquipId = null;
-            document.getElementById('equip-action-btn').innerHTML = '<i class="fas fa-toolbox"></i> Save Equipment';
-        } else { await db.collection('equipments').add(data); }
+        if(currentEditEquipId) { await db.collection('equipments').doc(currentEditEquipId).update(data); currentEditEquipId = null; }
+        else { await db.collection('equipments').add(data); }
         document.getElementById('equip-name').value = ""; document.getElementById('equip-qty').value = ""; document.getElementById('equip-id').value = "";
         refreshUI();
     }
@@ -234,37 +267,13 @@
     async function processWorker() {
         const date = document.getElementById('work-date').value;
         const name = document.getElementById('worker-name').value;
-        const ot = document.getElementById('worker-ot').value;
-        if(!name || !date) return alert("Enter details");
+        const ot = document.getElementById('worker-ot').value || 0;
+        if(!date || !name) return alert("Fill all fields");
         const data = { date, name, ot, uid: auth.currentUser.uid, ts: Date.now() };
-        if(currentEditWorkId) {
-            await db.collection('workers').doc(currentEditWorkId).update(data);
-            currentEditWorkId = null;
-            document.getElementById('work-action-btn').innerHTML = '<i class="fas fa-user-check"></i> Save Entry';
-        } else { await db.collection('workers').add(data); }
+        if(currentEditWorkId) { await db.collection('workers').doc(currentEditWorkId).update(data); currentEditWorkId = null; }
+        else { await db.collection('workers').add(data); }
         document.getElementById('worker-name').value = ""; document.getElementById('worker-ot').value = "";
         refreshUI();
-    }
-
-    async function removeDoc(col, id) { if(confirm("Permanently delete this?")) { await db.collection(col).doc(id).delete(); refreshUI(); } }
-
-    function editMatEntry(id, area, dir, len, wid, date, qty) {
-        currentEditMatId = id; document.getElementById('mat-date').value = date; document.getElementById('mat-area').value = area;
-        document.getElementById('mat-direction').value = dir || ""; document.getElementById('mat-length').value = len;
-        document.getElementById('mat-width').value = wid || ""; document.getElementById('mat-qty').value = qty || 1;
-        document.getElementById('mat-action-btn').innerHTML = '<i class="fas fa-save"></i> Update Material';
-    }
-
-    function editEquipEntry(id, name, qty, equipId, date) {
-        currentEditEquipId = id; document.getElementById('equip-date').value = date; document.getElementById('equip-name').value = name;
-        document.getElementById('equip-qty').value = qty; document.getElementById('equip-id').value = (equipId !== 'undefined') ? equipId : '';
-        document.getElementById('equip-action-btn').innerHTML = '<i class="fas fa-save"></i> Update Equipment';
-    }
-
-    function editWorkEntry(id, name, ot, date) {
-        currentEditWorkId = id; document.getElementById('work-date').value = date;
-        document.getElementById('worker-name').value = name; document.getElementById('worker-ot').value = ot;
-        document.getElementById('work-action-btn').innerHTML = '<i class="fas fa-save"></i> Update Entry';
     }
 
     async function refreshUI() {
@@ -273,19 +282,22 @@
         updateSiteName();
         window.pdfMaterials = []; window.pdfEquipments = []; window.pdfWorkers = [];
 
+        // Materials UI
         const mSnap = await db.collection('materials').where('uid', '==', uid).get();
         let totalW = 0, mAreaGroups = {};
         mSnap.forEach(doc => {
             const d = doc.data(); if(!mAreaGroups[d.area]) mAreaGroups[d.area] = [];
             mAreaGroups[d.area].push({id: doc.id, ...d}); totalW += d.weight;
-            window.pdfMaterials.push({ date: d.date, area: d.area, direction: d.direction || '-', name: d.name, size: d.size, qty: d.qty, weight: parseFloat(d.weight) });
+            window.pdfMaterials.push({ date: d.date, area: d.area, direction: d.direction || '-', name: d.name, size: d.size, qty: d.qty, weight: parseFloat(d.weight), photo: d.photoUrl || "" });
         });
+        
         let mHTML = '';
         Object.keys(mAreaGroups).sort().forEach(area => {
             mHTML += `<div class="area-badge"><i class="fas fa-map-marker-alt"></i> ${area}</div><table><tbody>`;
             mAreaGroups[area].forEach(d => {
+                const photoBtn = d.photoUrl ? `<a href="${d.photoUrl}" target="_blank" class="photo-link"><i class="fas fa-image"></i> View Photo</a>` : '';
                 const l = d.size.split('x')[0], w = d.size.split('x')[1] || "";
-                mHTML += `<tr><td><strong>${d.name}</strong><br><small>${d.direction || ''} (${formatToDisplayDate(d.date)})</small></td>
+                mHTML += `<tr><td><strong>${d.name}</strong><br><small>${d.direction || ''} (${formatToDisplayDate(d.date)})</small>${photoBtn}</td>
                 <td>${d.size}<br>Qty: ${d.qty}</td><td>${d.weight} kg</td>
                 <td><div style="display:flex;gap:5px;"><button class="btn-circle btn-main" onclick="editMatEntry('${d.id}','${d.area}','${d.direction}','${l}','${w}','${d.date}','${d.qty}')"><i class="fas fa-pencil-alt"></i></button>
                 <button class="btn-circle btn-red" onclick="removeDoc('materials','${d.id}')"><i class="fas fa-trash"></i></button></div></td></tr>`;
@@ -294,6 +306,7 @@
         document.getElementById('mat-grouped-display').innerHTML = mHTML;
         document.getElementById('grand-total').innerText = totalW.toFixed(2) + " KG";
 
+        // Equipments UI
         const eSnap = await db.collection('equipments').where('uid', '==', uid).get();
         const eGroups = {}; eSnap.forEach(doc => { const d = doc.data(); if(!eGroups[d.date]) eGroups[d.date] = []; eGroups[d.date].push({id: doc.id, ...d}); 
         window.pdfEquipments.push([formatToDisplayDate(d.date), d.name, d.equipId || '-', d.qty]); });
@@ -307,6 +320,7 @@
         });
         document.getElementById('equip-grouped-list').innerHTML = eRows;
 
+        // Workers UI
         const wSnap = await db.collection('workers').where('uid', '==', uid).get();
         const wGroups = {}; wSnap.forEach(doc => { const d = doc.data(); if(!wGroups[d.date]) wGroups[d.date] = []; wGroups[d.date].push({id: doc.id, ...d}); 
         window.pdfWorkers.push({date: d.date, name: d.name, ot: d.ot}); });
@@ -322,42 +336,37 @@
     }
 
     function generateMaterialPDF() {
-        if (window.pdfMaterials.length === 0) return alert("No data");
+        if (window.pdfMaterials.length === 0) return alert("No material data found");
         const { jsPDF } = window.jspdf; const doc = new jsPDF();
         const site = document.getElementById('site-name-input').value || "Project";
         doc.setFontSize(18); doc.setTextColor(26, 115, 232); doc.text("GS CONSTRUCTIONS - MATERIAL LOG", 14, 20);
         doc.setFontSize(11); doc.setTextColor(100); doc.text("Project: " + site + " | Total: " + document.getElementById('grand-total').innerText, 14, 28);
         
-        // Area-wise grouping
         const areaGrouped = {};
-        window.pdfMaterials.forEach(m => { if(!areaGrouped[m.area]) areaGrouped[m.area] = []; areaGrouped[m.area].push([formatToDisplayDate(m.date), m.direction, m.name, m.size, m.qty, m.weight.toFixed(2)]); });
+        window.pdfMaterials.forEach(m => { 
+            if(!areaGrouped[m.area]) areaGrouped[m.area] = []; 
+            areaGrouped[m.area].push([formatToDisplayDate(m.date), m.direction, m.name, m.size, m.qty, m.weight.toFixed(2), m.photo ? "PHOTO ATTACHED" : "-"]); 
+        });
         
         let yPos = 35;
         Object.keys(areaGrouped).sort().forEach(area => {
             if(yPos > 240) { doc.addPage(); yPos = 20; }
             doc.setFontSize(12); doc.setTextColor(0); doc.text("Area: " + area, 14, yPos);
-            doc.autoTable({ startY: yPos + 2, head: [['Date', 'Dir', 'Item', 'Size', 'Qty', 'Weight (kg)']], body: areaGrouped[area], theme: 'grid', headStyles: { fillColor: [26, 115, 232] }, styles: { fontSize: 8 } });
+            doc.autoTable({ startY: yPos + 2, head: [['Date', 'Dir', 'Item', 'Size', 'Qty', 'Weight', 'Photo Link']], body: areaGrouped[area], theme: 'grid', headStyles: { fillColor: [26, 115, 232] }, styles: { fontSize: 7 } });
             yPos = doc.lastAutoTable.finalY + 12;
         });
 
-        // NEW: Material-wise Summary Calculation
-        const materialSummary = {};
-        window.pdfMaterials.forEach(m => {
-            if (!materialSummary[m.name]) materialSummary[m.name] = { totalWeight: 0, totalQty: 0 };
-            materialSummary[m.name].totalWeight += m.weight;
-            materialSummary[m.name].totalQty += parseFloat(m.qty);
-        });
-
-        const summaryBody = Object.keys(materialSummary).sort().map(name => [
-            name, materialSummary[name].totalQty, materialSummary[name].totalWeight.toFixed(2) + " kg"
-        ]);
-
-        if(yPos > 220) { doc.addPage(); yPos = 20; }
-        doc.setFontSize(14); doc.setTextColor(26, 115, 232); doc.text("MATERIAL SUMMARY (TOTALS)", 14, yPos);
-        doc.autoTable({ startY: yPos + 4, head: [['Material Name', 'Total Quantity', 'Total Weight']], body: summaryBody, theme: 'grid', headStyles: { fillColor: [21, 101, 192] }, styles: { fontSize: 9, fontStyle: 'bold' } });
-
         doc.save(site + "_Material_Log.pdf");
     }
+
+    function formatToDisplayDate(dateStr) { if(!dateStr) return ""; const [y, m, d] = dateStr.split('-'); return `${d}-${m}-${y}`; }
+    function autoCalcQty() { const idVal = document.getElementById('equip-id').value; if(idVal.trim() === "") { document.getElementById('equip-qty').value = ""; return; } const ids = idVal.split(',').filter(item => item.trim() !== ""); document.getElementById('equip-qty').value = ids.length; }
+    function togglePlateInput() { const isPlate = document.getElementById('mat-type').options[document.getElementById('mat-type').selectedIndex].getAttribute('data-type') === 'plate'; document.getElementById('plate-width-div').classList.toggle('hidden', !isPlate); }
+    function updateSiteName() { const val = document.getElementById('site-name-input').value; document.getElementById('site-header-text').innerText = val || "NO SITE SELECTED"; localStorage.setItem('gs_pro_site', val); }
+    async function removeDoc(col, id) { if(confirm("Permanently delete this?")) { await db.collection(col).doc(id).delete(); refreshUI(); } }
+    function editMatEntry(id, area, dir, len, wid, date, qty) { currentEditMatId = id; document.getElementById('mat-date').value = date; document.getElementById('mat-area').value = area; document.getElementById('mat-direction').value = dir || ""; document.getElementById('mat-length').value = len; document.getElementById('mat-width').value = wid || ""; document.getElementById('mat-qty').value = qty || 1; document.getElementById('mat-action-btn').innerHTML = '<i class="fas fa-save"></i> Update Material'; }
+    function editEquipEntry(id, name, qty, equipId, date) { currentEditEquipId = id; document.getElementById('equip-date').value = date; document.getElementById('equip-name').value = name; document.getElementById('equip-qty').value = qty; document.getElementById('equip-id').value = (equipId !== 'undefined') ? equipId : ''; document.getElementById('equip-action-btn').innerHTML = '<i class="fas fa-save"></i> Update Equipment'; }
+    function editWorkEntry(id, name, ot, date) { currentEditWorkId = id; document.getElementById('work-date').value = date; document.getElementById('worker-name').value = name; document.getElementById('worker-ot').value = ot; document.getElementById('work-action-btn').innerHTML = '<i class="fas fa-save"></i> Update Entry'; }
 
     function generateFullPDF() {
         const { jsPDF } = window.jspdf; const doc = new jsPDF();
@@ -367,40 +376,28 @@
         let currentY = 35;
 
         if (window.pdfMaterials.length > 0) {
-            doc.setFontSize(14); doc.setTextColor(26, 115, 232); doc.text("1. Material Log (Area Wise)", 14, currentY);
-            currentY += 8;
-            const areaGrouped = {};
-            window.pdfMaterials.forEach(m => { if(!areaGrouped[m.area]) areaGrouped[m.area] = []; areaGrouped[m.area].push([formatToDisplayDate(m.date), m.direction, m.name, m.size, m.qty, m.weight.toFixed(2)]); });
-            Object.keys(areaGrouped).sort().forEach(area => {
-                if(currentY > 250) { doc.addPage(); currentY = 20; }
-                doc.setFontSize(10); doc.setTextColor(0); doc.text("Area: " + area, 14, currentY);
-                doc.autoTable({ startY: currentY + 2, head: [['Date', 'Dir', 'Item', 'Size', 'Qty', 'Weight']], body: areaGrouped[area], theme: 'grid', headStyles: { fillColor: [26, 115, 232] }, styles: { fontSize: 7 } });
-                currentY = doc.lastAutoTable.finalY + 10;
-            });
+            doc.setFontSize(14); doc.setTextColor(26, 115, 232); doc.text("1. Material Log", 14, currentY);
+            currentY += 5;
+            const body = window.pdfMaterials.map(m => [formatToDisplayDate(m.date), m.area, m.name, m.qty, m.weight + "kg"]);
+            doc.autoTable({ startY: currentY, head: [['Date', 'Area', 'Item', 'Qty', 'Weight']], body: body, theme: 'grid', styles: { fontSize: 7 } });
+            currentY = doc.lastAutoTable.finalY + 15;
         }
 
         if (window.pdfEquipments.length > 0) {
             if(currentY > 240) { doc.addPage(); currentY = 20; }
-            doc.setFontSize(14); doc.setTextColor(245, 127, 23); doc.text("2. Tools & Equipments Log", 14, currentY);
-            doc.autoTable({ startY: currentY + 4, head: [['Date', 'Tool', 'ID/No', 'Qty']], body: window.pdfEquipments, theme: 'grid', headStyles: { fillColor: [245, 127, 23] }, styles: { fontSize: 8 } });
+            doc.setFontSize(14); doc.setTextColor(245, 127, 23); doc.text("2. Tools & Equipments", 14, currentY);
+            doc.autoTable({ startY: currentY + 5, head: [['Date', 'Tool', 'ID/No', 'Qty']], body: window.pdfEquipments, theme: 'grid', styles: { fontSize: 8 } });
             currentY = doc.lastAutoTable.finalY + 15;
         }
 
         if (window.pdfWorkers.length > 0) {
             if(currentY > 240) { doc.addPage(); currentY = 20; }
-            doc.setFontSize(14); doc.setTextColor(30, 142, 62); doc.text("3. Workers Attendance (Daily)", 14, currentY);
-            currentY += 10;
-            const grouped = {};
-            window.pdfWorkers.forEach(w => { if(!grouped[w.date]) grouped[w.date] = []; grouped[w.date].push([w.name, w.ot]); });
-            Object.keys(grouped).sort().reverse().forEach(date => {
-                if(currentY > 250) { doc.addPage(); currentY = 20; }
-                doc.setFontSize(10); doc.setTextColor(50); doc.text("Date: " + formatToDisplayDate(date), 14, currentY);
-                doc.autoTable({ startY: currentY + 2, head: [['Worker Name', 'OT Hours']], body: grouped[date], theme: 'striped', headStyles: { fillColor: [30, 142, 62] }, styles: { fontSize: 8 } });
-                currentY = doc.lastAutoTable.finalY + 10;
-            });
+            doc.setFontSize(14); doc.setTextColor(30, 142, 62); doc.text("3. Workers Attendance", 14, currentY);
+            const wBody = window.pdfWorkers.map(w => [formatToDisplayDate(w.date), w.name, w.ot]);
+            doc.autoTable({ startY: currentY + 5, head: [['Date', 'Worker', 'OT']], body: wBody, theme: 'grid', styles: { fontSize: 8 } });
         }
         doc.save(site + "_Full_Report.pdf");
     }
 </script>
 </body>
-                                                                                                                                                                                                                                                    </html>
+</html>
