@@ -130,7 +130,12 @@
         <div class="section-card" style="border-top: 4px solid var(--secondary);">
             <div class="section-title" style="color: var(--secondary);"><i class="fas fa-user-clock"></i> Workers Attendance</div>
             <input type="date" id="work-date">
-            <input type="text" id="worker-name" placeholder="Full Name of Worker">
+            
+            <input list="workers-list" id="worker-name" placeholder="Full Name of Worker">
+            <datalist id="workers-list">
+                <option value="AKHIL DAS D"><option value="PRADEEP M"><option value="SREERAJ"><option value="AMEER ALI KHAN"><option value="SUKU K"><option value="RINU M"><option value="DIJU GEORGE"><option value="RAVEENDRAN PILLAI"><option value="HARIKUMAR"><option value="AROMAL"><option value="BINUKUMAR"><option value="BINU G"><option value="SREEKUMAR"><option value="ANOOP KUMAR"><option value="SAJAN JOSEPH"><option value="VASAVAN MADHU"><option value="AJEESH KUMAR MD"><option value="BILENDRAN"><option value="SUNIL BABU"><option value="SUNIL KUMAR K"><option value="JOYMUKHARJEE"><option value="ROY P JOHN"><option value="RADHAKRISHNA PILLAI"><option value="JEMIN J"><option value="RAJENDRAN R"><option value="ACHURAJ MB"><option value="MATHEW OOMMEN"><option value="AYYAPPAN R"><option value="RAJAN R"><option value="NITHIN V RAJ"><option value="GOPU D"><option value="ABHIJITH G P"><option value="SOORAJ R">
+            </datalist>
+            
             <input type="number" id="worker-ot" placeholder="Total OT Hours">
             <button id="work-action-btn" class="btn-green" onclick="processWorker()"><i class="fas fa-user-check"></i> Save Entry</button>
             <div id="worker-grouped-list"></div>
@@ -427,7 +432,6 @@
                 workersGroupedByDate[w.date].push([w.name, w.ot]);
             });
             
-            // Loop through dates (newest dates first) and create separate tables
             Object.keys(workersGroupedByDate).sort().reverse().forEach(dateKey => {
                 const fDate = formatToDisplayDate(dateKey);
                 if(currentY > 260) { doc.addPage(); currentY = 20; }
