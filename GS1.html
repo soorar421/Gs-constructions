@@ -45,7 +45,7 @@
 
 <div id="loading-overlay">
     <i class="fas fa-spinner fa-spin fa-3x" style="color: var(--primary);"></i>
-    <p id="loading-text" style="margin-top: 10px; font-weight: bold;">Uploading Photo... Please wait</p>
+    <p style="margin-top: 10px; font-weight: bold;">Uploading Photo... Please wait</p>
 </div>
 
 <div class="container">
@@ -130,10 +130,12 @@
         <div class="section-card" style="border-top: 4px solid var(--secondary);">
             <div class="section-title" style="color: var(--secondary);"><i class="fas fa-user-clock"></i> Workers Attendance</div>
             <input type="date" id="work-date">
+            
             <input list="workers-list" id="worker-name" placeholder="Full Name of Worker">
             <datalist id="workers-list">
                 <option value="AKHIL DAS D"><option value="PRADEEP M"><option value="SREERAJ"><option value="AMEER ALI KHAN"><option value="SUKU K"><option value="RINU M"><option value="DIJU GEORGE"><option value="RAVEENDRAN PILLAI"><option value="HARIKUMAR"><option value="AROMAL"><option value="BINUKUMAR"><option value="BINU G"><option value="SREEKUMAR"><option value="ANOOP KUMAR"><option value="SAJAN JOSEPH"><option value="VASAVAN MADHU"><option value="AJEESH KUMAR MD"><option value="BILENDRAN"><option value="SUNIL BABU"><option value="SUNIL KUMAR K"><option value="JOYMUKHARJEE"><option value="ROY P JOHN"><option value="RADHAKRISHNA PILLAI"><option value="JEMIN J"><option value="RAJENDRAN R"><option value="ACHURAJ MB"><option value="MATHEW OOMMEN"><option value="AYYAPPAN R"><option value="RAJAN R"><option value="NITHIN V RAJ"><option value="GOPU D"><option value="ABHIJITH G P"><option value="SOORAJ R">
             </datalist>
+            
             <input type="number" id="worker-ot" placeholder="Total OT Hours">
             <button id="work-action-btn" class="btn-green" onclick="processWorker()"><i class="fas fa-user-check"></i> Save Entry</button>
             <div id="worker-grouped-list"></div>
@@ -182,7 +184,6 @@
     });
 
     async function uploadToImgBB(file) {
-        document.getElementById('loading-text').innerText = "Uploading Photo... Please wait";
         document.getElementById('loading-overlay').style.display = 'flex';
         let formData = new FormData();
         formData.append("image", file);
@@ -248,112 +249,25 @@
         refreshUI();
     }
 
-    // UPDATED FUNCTION: Includes images in PDF
-    async function generateMaterialPDF() {
-        if (window.pdfMaterials.length === 0) return alert("No data to export.");
-        
-        document.getElementById('loading-text').innerText = "Preparing PDF with Images... Please wait";
-        document.getElementById('loading-overlay').style.display = 'flex';
-
-        const { jsPDF } = window.jspdf; 
-        const doc = new jsPDF();
-        const site = document.getElementById('site-name-input').value || "Project";
-        
-        doc.setFontSize(18); doc.setTextColor(26, 115, 232); doc.text("GS CONSTRUCTIONS - MATERIAL LOG", 14, 20);
-        doc.setFontSize(11); doc.setTextColor(100); doc.text("Project: " + site + " | Total: " + document.getElementById('grand-total').innerText, 14, 28);
-        
-        const areaGrouped = {};
-        window.pdfMaterials.forEach(m => { 
-            if(!areaGrouped[m.area]) areaGrouped[m.area] = []; 
-            // We store the photo URL in the array to use it during drawing
-            areaGrouped[m.area].push([formatToDisplayDate(m.date), m.direction, m.name, m.size, m.qty, m.weight.toFixed(2), m.photo || ""]); 
-        });
-        
-        let yPos = 35;
-        const areas = Object.keys(areaGrouped).sort();
-
-        // Helper function to convert URL to Image data
-        const getImageData = (url) => {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.crossOrigin = "Anonymous";
-                img.onload = () => {
-                    const canvas = document.createElement("canvas");
-                    canvas.width = img.width; canvas.height = img.height;
-                    const ctx = canvas.getContext("2d");
-                    ctx.drawImage(img, 0, 0);
-                    resolve(canvas.toDataURL("image/jpeg", 0.7));
-                };
-                img.onerror = () => resolve(null);
-                img.src = url;
-            });
-        };
-
-        for (const area of areas) {
-            if(yPos > 240) { doc.addPage(); yPos = 20; }
-            doc.setFontSize(12); doc.setTextColor(0); doc.text("Area: " + area, 14, yPos);
-
-            // Process body to handle images
-            const tableBody = [];
-            for (const row of areaGrouped[area]) {
-                const rowCopy = [...row];
-                const photoUrl = rowCopy[6];
-                rowCopy[6] = ""; // Clear text for photo column
-                tableBody.push({ data: rowCopy, photo: photoUrl });
-            }
-
-            await doc.autoTable({ 
-                startY: yPos + 2, 
-                head: [['Date', 'Dir', 'Item', 'Size', 'Qty', 'Weight', 'Photo']], 
-                body: tableBody.map(b => b.data),
-                theme: 'grid', 
-                headStyles: { fillColor: [26, 115, 232] }, 
-                styles: { fontSize: 7, minCellHeight: 15, verticalAlign: 'middle' },
-                didDrawCell: async (data) => {
-                    if (data.section === 'body' && data.column.index === 6) {
-                        const photoUrl = tableBody[data.row.index].photo;
-                        if (photoUrl) {
-                            const imgData = await getImageData(photoUrl);
-                            if (imgData) {
-                                doc.addImage(imgData, 'JPEG', data.cell.x + 2, data.cell.y + 2, 11, 11);
-                            }
-                        }
-                    }
-                }
-            });
-            yPos = doc.lastAutoTable.finalY + 12;
-        }
-
-        // Material-wise Summary
-        const materialSummary = {};
-        window.pdfMaterials.forEach(m => {
-            if (!materialSummary[m.name]) materialSummary[m.name] = { totalWeight: 0, totalQty: 0 };
-            materialSummary[m.name].totalWeight += m.weight;
-            materialSummary[m.name].totalQty += parseFloat(m.qty);
-        });
-        const summaryBody = Object.keys(materialSummary).sort().map(name => [name, materialSummary[name].totalQty, materialSummary[name].totalWeight.toFixed(2) + " kg"]);
-        if(yPos > 220) { doc.addPage(); yPos = 20; }
-        doc.setFontSize(14); doc.setTextColor(26, 115, 232); doc.text("MATERIAL SUMMARY (TOTALS)", 14, yPos);
-        doc.autoTable({ startY: yPos + 4, head: [['Material Name', 'Total Quantity', 'Total Weight']], body: summaryBody, theme: 'grid', headStyles: { fillColor: [21, 101, 192] }, styles: { fontSize: 9, fontStyle: 'bold' } });
-
-        document.getElementById('loading-overlay').style.display = 'none';
-        doc.save(site + "_Material_Log.pdf");
-    }
-
-    // Equipment, Workers, and UI Logic (Unchanged)
     async function processEquipment() {
         const date = document.getElementById('equip-date').value;
         const name = document.getElementById('equip-name').value;
         const equipId = document.getElementById('equip-id').value;
         const qty = parseFloat(document.getElementById('equip-qty').value) || 1;
+        
         if(!date || !name) return alert("Please fill equipment name and date.");
+        
         const data = { date, name, equipId, qty, uid: auth.currentUser.uid, ts: Date.now() };
+        
         if (currentEditEquipId) {
             await db.collection('equipments').doc(currentEditEquipId).update(data);
             currentEditEquipId = null;
             document.getElementById('equip-action-btn').innerHTML = '<i class="fas fa-toolbox"></i> Save Equipment';
         } else { await db.collection('equipments').add(data); }
-        document.getElementById('equip-name').value = ""; document.getElementById('equip-id').value = ""; document.getElementById('equip-qty').value = "";
+        
+        document.getElementById('equip-name').value = "";
+        document.getElementById('equip-id').value = "";
+        document.getElementById('equip-qty').value = "";
         refreshUI();
     }
 
@@ -361,14 +275,19 @@
         const date = document.getElementById('work-date').value;
         const name = document.getElementById('worker-name').value;
         const ot = document.getElementById('worker-ot').value || 0;
+
         if(!date || !name) return alert("Please fill worker name and date.");
+        
         const data = { date, name, ot: parseFloat(ot), uid: auth.currentUser.uid, ts: Date.now() };
+        
         if (currentEditWorkId) {
             await db.collection('workers').doc(currentEditWorkId).update(data);
             currentEditWorkId = null;
             document.getElementById('work-action-btn').innerHTML = '<i class="fas fa-user-check"></i> Save Entry';
         } else { await db.collection('workers').add(data); }
-        document.getElementById('worker-name').value = ""; document.getElementById('worker-ot').value = "";
+        
+        document.getElementById('worker-name').value = "";
+        document.getElementById('worker-ot').value = "";
         refreshUI();
     }
 
@@ -401,22 +320,78 @@
         document.getElementById('mat-grouped-display').innerHTML = mHTML;
         document.getElementById('grand-total').innerText = totalW.toFixed(2) + " KG";
 
+        // Equipments UI
         const eSnap = await db.collection('equipments').where('uid', '==', uid).get();
-        const eGroups = {}; eSnap.forEach(doc => { const d = doc.data(); if(!eGroups[d.date]) eGroups[d.date] = []; eGroups[d.date].push({id: doc.id, ...d}); window.pdfEquipments.push([formatToDisplayDate(d.date), d.name, d.equipId || '-', d.qty]); });
-        let eRows = ''; Object.keys(eGroups).sort().reverse().forEach(date => { eRows += `<div class="date-badge" style="background: #f57f17;"><i class="far fa-calendar-alt"></i> ${formatToDisplayDate(date)}</div><table>`; eGroups[date].forEach(e => { eRows += `<tr><td><strong>${e.name}</strong>${e.equipId ? '<br><small>ID:'+e.equipId+'</small>' : ''}</td><td>Qty: ${e.qty}</td><td><div style="display:flex;gap:5px;"><button class="btn-circle btn-yellow" onclick="editEquipEntry('${e.id}','${e.name}','${e.qty}','${e.equipId}','${e.date}')"><i class="fas fa-pencil-alt"></i></button><button class="btn-circle btn-red" onclick="removeDoc('equipments','${e.id}')"><i class="fas fa-trash"></i></button></div></td></tr>`; }); eRows += `</table>`; });
+        const eGroups = {}; eSnap.forEach(doc => { const d = doc.data(); if(!eGroups[d.date]) eGroups[d.date] = []; eGroups[d.date].push({id: doc.id, ...d}); 
+        window.pdfEquipments.push([formatToDisplayDate(d.date), d.name, d.equipId || '-', d.qty]); });
+        let eRows = ''; Object.keys(eGroups).sort().reverse().forEach(date => {
+            eRows += `<div class="date-badge" style="background: #f57f17;"><i class="far fa-calendar-alt"></i> ${formatToDisplayDate(date)}</div><table>`;
+            eGroups[date].forEach(e => {
+                eRows += `<tr><td><strong>${e.name}</strong>${e.equipId ? '<br><small>ID:'+e.equipId+'</small>' : ''}</td><td>Qty: ${e.qty}</td>
+                <td><div style="display:flex;gap:5px;"><button class="btn-circle btn-yellow" onclick="editEquipEntry('${e.id}','${e.name}','${e.qty}','${e.equipId}','${e.date}')"><i class="fas fa-pencil-alt"></i></button>
+                <button class="btn-circle btn-red" onclick="removeDoc('equipments','${e.id}')"><i class="fas fa-trash"></i></button></div></td></tr>`;
+            }); eRows += `</table>`;
+        });
         document.getElementById('equip-grouped-list').innerHTML = eRows;
 
+        // Workers UI
         const wSnap = await db.collection('workers').where('uid', '==', uid).get();
-        const wGroups = {}; wSnap.forEach(doc => { const d = doc.data(); if(!wGroups[d.date]) wGroups[d.date] = []; wGroups[d.date].push({id: doc.id, ...d}); window.pdfWorkers.push({date: d.date, name: d.name, ot: d.ot}); });
-        let wRows = ''; Object.keys(wGroups).sort().reverse().forEach(date => { wRows += `<div class="date-badge"><i class="far fa-calendar-alt"></i> ${formatToDisplayDate(date)}</div><table>`; wGroups[date].forEach(w => { wRows += `<tr><td>${w.name}</td><td>OT: ${w.ot}</td><td><div style="display:flex;gap:5px;"><button class="btn-circle btn-green" onclick="editWorkEntry('${w.id}','${w.name}','${w.ot}','${w.date}')"><i class="fas fa-pencil-alt"></i></button><button class="btn-circle btn-red" onclick="removeDoc('workers','${w.id}')"><i class="fas fa-trash"></i></button></div></td></tr>`; }); wRows += `</table>`; });
+        const wGroups = {}; wSnap.forEach(doc => { const d = doc.data(); if(!wGroups[d.date]) wGroups[d.date] = []; wGroups[d.date].push({id: doc.id, ...d}); 
+        window.pdfWorkers.push({date: d.date, name: d.name, ot: d.ot}); });
+        let wRows = ''; Object.keys(wGroups).sort().reverse().forEach(date => {
+            wRows += `<div class="date-badge"><i class="far fa-calendar-alt"></i> ${formatToDisplayDate(date)}</div><table>`;
+            wGroups[date].forEach(w => {
+                wRows += `<tr><td>${w.name}</td><td>OT: ${w.ot}</td>
+                <td><div style="display:flex;gap:5px;"><button class="btn-circle btn-green" onclick="editWorkEntry('${w.id}','${w.name}','${w.ot}','${w.date}')"><i class="fas fa-pencil-alt"></i></button>
+                <button class="btn-circle btn-red" onclick="removeDoc('workers','${w.id}')"><i class="fas fa-trash"></i></button></div></td></tr>`;
+            }); wRows += `</table>`;
+        });
         document.getElementById('worker-grouped-list').innerHTML = wRows;
     }
 
+    function generateMaterialPDF() {
+        if (window.pdfMaterials.length === 0) return alert("No data");
+        const { jsPDF } = window.jspdf; const doc = new jsPDF();
+        const site = document.getElementById('site-name-input').value || "Project";
+        doc.setFontSize(18); doc.setTextColor(26, 115, 232); doc.text("GS CONSTRUCTIONS - MATERIAL LOG", 14, 20);
+        doc.setFontSize(11); doc.setTextColor(100); doc.text("Project: " + site + " | Total: " + document.getElementById('grand-total').innerText, 14, 28);
+        
+        const areaGrouped = {};
+        window.pdfMaterials.forEach(m => { 
+            if(!areaGrouped[m.area]) areaGrouped[m.area] = []; 
+            areaGrouped[m.area].push([formatToDisplayDate(m.date), m.direction, m.name, m.size, m.qty, m.weight.toFixed(2)]); 
+        });
+        
+        let yPos = 35;
+        Object.keys(areaGrouped).sort().forEach(area => {
+            if(yPos > 240) { doc.addPage(); yPos = 20; }
+            doc.setFontSize(12); doc.setTextColor(0); doc.text("Area: " + area, 14, yPos);
+            doc.autoTable({ startY: yPos + 2, head: [['Date', 'Dir', 'Item', 'Size', 'Qty', 'Weight']], body: areaGrouped[area], theme: 'grid', headStyles: { fillColor: [26, 115, 232] }, styles: { fontSize: 7 } });
+            yPos = doc.lastAutoTable.finalY + 12;
+        });
+
+        // Material-wise Summary
+        const materialSummary = {};
+        window.pdfMaterials.forEach(m => {
+            if (!materialSummary[m.name]) materialSummary[m.name] = { totalWeight: 0, totalQty: 0 };
+            materialSummary[m.name].totalWeight += m.weight;
+            materialSummary[m.name].totalQty += parseFloat(m.qty);
+        });
+        const summaryBody = Object.keys(materialSummary).sort().map(name => [name, materialSummary[name].totalQty, materialSummary[name].totalWeight.toFixed(2) + " kg"]);
+        if(yPos > 220) { doc.addPage(); yPos = 20; }
+        doc.setFontSize(14); doc.setTextColor(26, 115, 232); doc.text("MATERIAL SUMMARY (TOTALS)", 14, yPos);
+        doc.autoTable({ startY: yPos + 4, head: [['Material Name', 'Total Quantity', 'Total Weight']], body: summaryBody, theme: 'grid', headStyles: { fillColor: [21, 101, 192] }, styles: { fontSize: 9, fontStyle: 'bold' } });
+
+        doc.save(site + "_Material_Log.pdf");
+    }
+
+    // Helper functions
     function formatToDisplayDate(dateStr) { if(!dateStr) return ""; const [y, m, d] = dateStr.split('-'); return `${d}-${m}-${y}`; }
     function autoCalcQty() { const idVal = document.getElementById('equip-id').value; if(idVal.trim() === "") { document.getElementById('equip-qty').value = ""; return; } const ids = idVal.split(',').filter(item => item.trim() !== ""); document.getElementById('equip-qty').value = ids.length; }
     function togglePlateInput() { const isPlate = document.getElementById('mat-type').options[document.getElementById('mat-type').selectedIndex].getAttribute('data-type') === 'plate'; document.getElementById('plate-width-div').classList.toggle('hidden', !isPlate); }
     function updateSiteName() { const val = document.getElementById('site-name-input').value; document.getElementById('site-header-text').innerText = val || "NO SITE SELECTED"; localStorage.setItem('gs_pro_site', val); }
     async function removeDoc(col, id) { if(confirm("Permanently delete this?")) { await db.collection(col).doc(id).delete(); refreshUI(); } }
+    
     function editMatEntry(id, area, dir, len, wid, date, qty) { currentEditMatId = id; document.getElementById('mat-date').value = date; document.getElementById('mat-area').value = area; document.getElementById('mat-direction').value = dir || ""; document.getElementById('mat-length').value = len; document.getElementById('mat-width').value = wid || ""; document.getElementById('mat-qty').value = qty || 1; document.getElementById('mat-action-btn').innerHTML = '<i class="fas fa-save"></i> Update Material'; }
     function editEquipEntry(id, name, qty, equipId, date) { currentEditEquipId = id; document.getElementById('equip-date').value = date; document.getElementById('equip-name').value = name; document.getElementById('equip-qty').value = qty; document.getElementById('equip-id').value = (equipId !== 'undefined') ? equipId : ''; document.getElementById('equip-action-btn').innerHTML = '<i class="fas fa-save"></i> Update Equipment'; }
     function editWorkEntry(id, name, ot, date) { currentEditWorkId = id; document.getElementById('work-date').value = date; document.getElementById('worker-name').value = name; document.getElementById('worker-ot').value = ot; document.getElementById('work-action-btn').innerHTML = '<i class="fas fa-save"></i> Update Entry'; }
@@ -427,11 +402,58 @@
         doc.setFontSize(20); doc.setTextColor(26, 115, 232); doc.text("GS CONSTRUCTIONS - SITE REPORT", 14, 20);
         doc.setFontSize(11); doc.setTextColor(100); doc.text("Project: " + site, 14, 28);
         let currentY = 35;
-        if (window.pdfMaterials.length > 0) { doc.setFontSize(14); doc.setTextColor(26, 115, 232); doc.text("1. Material Log", 14, currentY); currentY += 5; const body = window.pdfMaterials.map(m => [formatToDisplayDate(m.date), m.area, m.name, m.qty, m.weight + "kg"]); doc.autoTable({ startY: currentY, head: [['Date', 'Area', 'Item', 'Qty', 'Weight']], body: body, theme: 'grid', styles: { fontSize: 7 } }); currentY = doc.lastAutoTable.finalY + 15; }
-        if (window.pdfEquipments.length > 0) { if(currentY > 250) { doc.addPage(); currentY = 20; } doc.setFontSize(14); doc.setTextColor(245, 127, 23); doc.text("2. Tools & Equipments", 14, currentY); doc.autoTable({ startY: currentY + 5, head: [['Date', 'Tool', 'ID/No', 'Qty']], body: window.pdfEquipments, theme: 'grid', styles: { fontSize: 8 } }); currentY = doc.lastAutoTable.finalY + 15; }
-        if (window.pdfWorkers.length > 0) { if(currentY > 250) { doc.addPage(); currentY = 20; } doc.setFontSize(14); doc.setTextColor(30, 142, 62); doc.text("3. Workers Attendance", 14, currentY); currentY += 8; const workersGroupedByDate = {}; window.pdfWorkers.forEach(w => { if (!workersGroupedByDate[w.date]) workersGroupedByDate[w.date] = []; workersGroupedByDate[w.date].push([w.name, w.ot]); }); Object.keys(workersGroupedByDate).sort().reverse().forEach(dateKey => { const fDate = formatToDisplayDate(dateKey); if(currentY > 260) { doc.addPage(); currentY = 20; } doc.setFontSize(11); doc.setTextColor(0); doc.text("Date: " + fDate, 14, currentY); doc.autoTable({ startY: currentY + 2, head: [['Worker Name', 'Total OT Hours']], body: workersGroupedByDate[dateKey], theme: 'grid', headStyles: { fillColor: [30, 142, 62] }, styles: { fontSize: 8 } }); currentY = doc.lastAutoTable.finalY + 10; }); }
+
+        // 1. Material Log
+        if (window.pdfMaterials.length > 0) {
+            doc.setFontSize(14); doc.setTextColor(26, 115, 232); doc.text("1. Material Log", 14, currentY);
+            currentY += 5;
+            const body = window.pdfMaterials.map(m => [formatToDisplayDate(m.date), m.area, m.name, m.qty, m.weight + "kg"]);
+            doc.autoTable({ startY: currentY, head: [['Date', 'Area', 'Item', 'Qty', 'Weight']], body: body, theme: 'grid', styles: { fontSize: 7 } });
+            currentY = doc.lastAutoTable.finalY + 15;
+        }
+
+        // 2. Tools & Equipments
+        if (window.pdfEquipments.length > 0) {
+            if(currentY > 250) { doc.addPage(); currentY = 20; }
+            doc.setFontSize(14); doc.setTextColor(245, 127, 23); doc.text("2. Tools & Equipments", 14, currentY);
+            doc.autoTable({ startY: currentY + 5, head: [['Date', 'Tool', 'ID/No', 'Qty']], body: window.pdfEquipments, theme: 'grid', styles: { fontSize: 8 } });
+            currentY = doc.lastAutoTable.finalY + 15;
+        }
+
+        // 3. Workers Attendance (Grouped Separately by Date)
+        if (window.pdfWorkers.length > 0) {
+            if(currentY > 250) { doc.addPage(); currentY = 20; }
+            doc.setFontSize(14); doc.setTextColor(30, 142, 62); doc.text("3. Workers Attendance", 14, currentY);
+            currentY += 8;
+            
+            const workersGroupedByDate = {};
+            window.pdfWorkers.forEach(w => {
+                if (!workersGroupedByDate[w.date]) workersGroupedByDate[w.date] = [];
+                workersGroupedByDate[w.date].push([w.name, w.ot]);
+            });
+            
+            Object.keys(workersGroupedByDate).sort().reverse().forEach(dateKey => {
+                const fDate = formatToDisplayDate(dateKey);
+                if(currentY > 260) { doc.addPage(); currentY = 20; }
+                
+                doc.setFontSize(11); 
+                doc.setTextColor(0); 
+                doc.text("Date: " + fDate, 14, currentY);
+                
+                doc.autoTable({
+                    startY: currentY + 2,
+                    head: [['Worker Name', 'Total OT Hours']],
+                    body: workersGroupedByDate[dateKey],
+                    theme: 'grid',
+                    headStyles: { fillColor: [30, 142, 62] },
+                    styles: { fontSize: 8 }
+                });
+                currentY = doc.lastAutoTable.finalY + 10;
+            });
+        }
         doc.save(site + "_Full_Report.pdf");
     }
 </script>
 </body>
 </html>
+
