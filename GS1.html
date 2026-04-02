@@ -237,6 +237,10 @@
         };
 
         if(currentEditMatId) {
+            // Keep existing photo if a new one is not uploaded during edit
+            if (!photoFile) {
+                delete data.photoUrl; 
+            }
             await db.collection('materials').doc(currentEditMatId).update(data);
             currentEditMatId = null;
             document.getElementById('mat-action-btn').innerHTML = '<i class="fas fa-plus-circle"></i> Save Material';
@@ -310,10 +314,16 @@
             mHTML += `<div class="area-badge"><i class="fas fa-map-marker-alt"></i> ${area}</div><table><tbody>`;
             mAreaGroups[area].forEach(d => {
                 const photoBtn = d.photoUrl ? `<a href="${d.photoUrl}" target="_blank" class="photo-link"><i class="fas fa-image"></i> View Photo</a>` : '';
-                const l = d.size.split('x')[0], w = d.size.split('x')[1] || "";
+                
+                // Fix for Length and Width Extraction
+                let cleanSize = d.size.replace(/mm/g, '').trim();
+                const l = cleanSize.split('x')[0];
+                const w = cleanSize.split('x')[1] || "";
+                
                 mHTML += `<tr><td><strong>${d.name}</strong><br><small>${d.direction || ''} (${formatToDisplayDate(d.date)})</small>${photoBtn}</td>
                 <td>${d.size}<br>Qty: ${d.qty}</td><td>${d.weight} kg</td>
-                <td><div style="display:flex;gap:5px;"><button class="btn-circle btn-main" onclick="editMatEntry('${d.id}','${d.area}','${d.direction}','${l}','${w}','${d.date}','${d.qty}')"><i class="fas fa-pencil-alt"></i></button>
+                <td><div style="display:flex;gap:5px;">
+                <button class="btn-circle btn-main" onclick="editMatEntry('${d.id}','${d.area}','${d.direction}','${l}','${w}','${d.date}','${d.qty}','${d.name}')"><i class="fas fa-pencil-alt"></i></button>
                 <button class="btn-circle btn-red" onclick="removeDoc('materials','${d.id}')"><i class="fas fa-trash"></i></button></div></td></tr>`;
             }); mHTML += `</tbody></table>`;
         });
@@ -392,7 +402,29 @@
     function updateSiteName() { const val = document.getElementById('site-name-input').value; document.getElementById('site-header-text').innerText = val || "NO SITE SELECTED"; localStorage.setItem('gs_pro_site', val); }
     async function removeDoc(col, id) { if(confirm("Permanently delete this?")) { await db.collection(col).doc(id).delete(); refreshUI(); } }
     
-    function editMatEntry(id, area, dir, len, wid, date, qty) { currentEditMatId = id; document.getElementById('mat-date').value = date; document.getElementById('mat-area').value = area; document.getElementById('mat-direction').value = dir || ""; document.getElementById('mat-length').value = len; document.getElementById('mat-width').value = wid || ""; document.getElementById('mat-qty').value = qty || 1; document.getElementById('mat-action-btn').innerHTML = '<i class="fas fa-save"></i> Update Material'; }
+    // Updated editMatEntry function
+    function editMatEntry(id, area, dir, len, wid, date, qty, name) { 
+        currentEditMatId = id; 
+        document.getElementById('mat-date').value = date; 
+        document.getElementById('mat-area').value = area; 
+        document.getElementById('mat-direction').value = dir || ""; 
+        document.getElementById('mat-length').value = len; 
+        document.getElementById('mat-width').value = wid || ""; 
+        document.getElementById('mat-qty').value = qty || 1; 
+
+        // Set the dropdown to the previously selected material
+        const sel = document.getElementById('mat-type');
+        for(let i=0; i<sel.options.length; i++) {
+            if(sel.options[i].text === name) {
+                sel.selectedIndex = i;
+                break;
+            }
+        }
+        togglePlateInput(); // Show width field if it's a plate
+
+        document.getElementById('mat-action-btn').innerHTML = '<i class="fas fa-save"></i> Update Material'; 
+    }
+
     function editEquipEntry(id, name, qty, equipId, date) { currentEditEquipId = id; document.getElementById('equip-date').value = date; document.getElementById('equip-name').value = name; document.getElementById('equip-qty').value = qty; document.getElementById('equip-id').value = (equipId !== 'undefined') ? equipId : ''; document.getElementById('equip-action-btn').innerHTML = '<i class="fas fa-save"></i> Update Equipment'; }
     function editWorkEntry(id, name, ot, date) { currentEditWorkId = id; document.getElementById('work-date').value = date; document.getElementById('worker-name').value = name; document.getElementById('worker-ot').value = ot; document.getElementById('work-action-btn').innerHTML = '<i class="fas fa-save"></i> Update Entry'; }
 
@@ -456,4 +488,3 @@
 </script>
 </body>
 </html>
-
