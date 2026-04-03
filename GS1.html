@@ -96,11 +96,28 @@
             </div>
 
             <select id="mat-type" onchange="togglePlateInput()">
-                <optgroup label="Beams"><option value="46" data-type="linear">ISMB 300 (46 kg/m)</option></optgroup>
-                <optgroup label="Channels"><option value="22.3" data-type="linear">ISMC 200 (22.3 kg/m)</option><option value="13.1" data-type="linear">ISMC 125 (13.1 kg/m)</option></optgroup>
-                <optgroup label="Angles"><option value="19.7" data-type="linear">ISA 130 (19.7 kg/m)</option><option value="14.9" data-type="linear">ISA 100 (14.9 kg/m)</option><option value="11" data-type="linear">ISA 75 (11 kg/m)</option><option value="4.5" data-type="linear">ISA 50 (4.5 kg/m)</option></optgroup>
-                <optgroup label="Flats"><option value="4.7" data-type="linear">ISF 100 (4.7 kg/m)</option><option value="1.5" data-type="linear">ISF 32 (1.5 kg/m)</option></optgroup>
-                <optgroup label="Plates"><option value="78.5" data-type="plate">10mm Plate (78.5 kg/sq.m)</option><option value="53.2" data-type="plate">CH Plate (53.2 kg/sq.m)</option></optgroup>
+                <optgroup label="Beams">
+                    <option value="46" data-type="linear">ISMB 300 (46 kg/m)</option>
+                </optgroup>
+                <optgroup label="Channels">
+                    <option value="22.3" data-type="linear">ISMC 200 (22.3 kg/m)</option>
+                    <option value="16.8" data-type="linear">ISMC 150 (16.8 kg/m)</option>
+                    <option value="13.1" data-type="linear">ISMC 125 (13.1 kg/m)</option>
+                </optgroup>
+                <optgroup label="Angles">
+                    <option value="19.7" data-type="linear">ISA 130 (19.7 kg/m)</option>
+                    <option value="14.9" data-type="linear">ISA 100 (14.9 kg/m)</option>
+                    <option value="11" data-type="linear">ISA 75 (11 kg/m)</option>
+                    <option value="4.5" data-type="linear">ISA 50 (4.5 kg/m)</option>
+                </optgroup>
+                <optgroup label="Flats">
+                    <option value="4.7" data-type="linear">ISF 100 (4.7 kg/m)</option>
+                    <option value="1.5" data-type="linear">ISF 32 (1.5 kg/m)</option>
+                </optgroup>
+                <optgroup label="Plates">
+                    <option value="78.5" data-type="plate">10mm Plate (78.5 kg/sq.m)</option>
+                    <option value="53.2" data-type="plate">CH Plate (53.2 kg/sq.m)</option>
+                </optgroup>
             </select>
             <div id="plate-width-div" class="hidden"><input type="number" id="mat-width" placeholder="Width in MM"></div>
             <div class="flex-row">
@@ -237,10 +254,7 @@
         };
 
         if(currentEditMatId) {
-            // Keep existing photo if a new one is not uploaded during edit
-            if (!photoFile) {
-                delete data.photoUrl; 
-            }
+            if (!photoFile) delete data.photoUrl; 
             await db.collection('materials').doc(currentEditMatId).update(data);
             currentEditMatId = null;
             document.getElementById('mat-action-btn').innerHTML = '<i class="fas fa-plus-circle"></i> Save Material';
@@ -315,7 +329,6 @@
             mAreaGroups[area].forEach(d => {
                 const photoBtn = d.photoUrl ? `<a href="${d.photoUrl}" target="_blank" class="photo-link"><i class="fas fa-image"></i> View Photo</a>` : '';
                 
-                // Fix for Length and Width Extraction
                 let cleanSize = d.size.replace(/mm/g, '').trim();
                 const l = cleanSize.split('x')[0];
                 const w = cleanSize.split('x')[1] || "";
@@ -380,7 +393,6 @@
             yPos = doc.lastAutoTable.finalY + 12;
         });
 
-        // Material-wise Summary
         const materialSummary = {};
         window.pdfMaterials.forEach(m => {
             if (!materialSummary[m.name]) materialSummary[m.name] = { totalWeight: 0, totalQty: 0 };
@@ -395,14 +407,12 @@
         doc.save(site + "_Material_Log.pdf");
     }
 
-    // Helper functions
     function formatToDisplayDate(dateStr) { if(!dateStr) return ""; const [y, m, d] = dateStr.split('-'); return `${d}-${m}-${y}`; }
     function autoCalcQty() { const idVal = document.getElementById('equip-id').value; if(idVal.trim() === "") { document.getElementById('equip-qty').value = ""; return; } const ids = idVal.split(',').filter(item => item.trim() !== ""); document.getElementById('equip-qty').value = ids.length; }
     function togglePlateInput() { const isPlate = document.getElementById('mat-type').options[document.getElementById('mat-type').selectedIndex].getAttribute('data-type') === 'plate'; document.getElementById('plate-width-div').classList.toggle('hidden', !isPlate); }
     function updateSiteName() { const val = document.getElementById('site-name-input').value; document.getElementById('site-header-text').innerText = val || "NO SITE SELECTED"; localStorage.setItem('gs_pro_site', val); }
     async function removeDoc(col, id) { if(confirm("Permanently delete this?")) { await db.collection(col).doc(id).delete(); refreshUI(); } }
     
-    // Updated editMatEntry function
     function editMatEntry(id, area, dir, len, wid, date, qty, name) { 
         currentEditMatId = id; 
         document.getElementById('mat-date').value = date; 
@@ -412,7 +422,6 @@
         document.getElementById('mat-width').value = wid || ""; 
         document.getElementById('mat-qty').value = qty || 1; 
 
-        // Set the dropdown to the previously selected material
         const sel = document.getElementById('mat-type');
         for(let i=0; i<sel.options.length; i++) {
             if(sel.options[i].text === name) {
@@ -420,8 +429,7 @@
                 break;
             }
         }
-        togglePlateInput(); // Show width field if it's a plate
-
+        togglePlateInput();
         document.getElementById('mat-action-btn').innerHTML = '<i class="fas fa-save"></i> Update Material'; 
     }
 
@@ -435,7 +443,6 @@
         doc.setFontSize(11); doc.setTextColor(100); doc.text("Project: " + site, 14, 28);
         let currentY = 35;
 
-        // 1. Material Log
         if (window.pdfMaterials.length > 0) {
             doc.setFontSize(14); doc.setTextColor(26, 115, 232); doc.text("1. Material Log", 14, currentY);
             currentY += 5;
@@ -444,7 +451,6 @@
             currentY = doc.lastAutoTable.finalY + 15;
         }
 
-        // 2. Tools & Equipments
         if (window.pdfEquipments.length > 0) {
             if(currentY > 250) { doc.addPage(); currentY = 20; }
             doc.setFontSize(14); doc.setTextColor(245, 127, 23); doc.text("2. Tools & Equipments", 14, currentY);
@@ -452,26 +458,19 @@
             currentY = doc.lastAutoTable.finalY + 15;
         }
 
-        // 3. Workers Attendance (Grouped Separately by Date)
         if (window.pdfWorkers.length > 0) {
             if(currentY > 250) { doc.addPage(); currentY = 20; }
             doc.setFontSize(14); doc.setTextColor(30, 142, 62); doc.text("3. Workers Attendance", 14, currentY);
             currentY += 8;
-            
             const workersGroupedByDate = {};
             window.pdfWorkers.forEach(w => {
                 if (!workersGroupedByDate[w.date]) workersGroupedByDate[w.date] = [];
                 workersGroupedByDate[w.date].push([w.name, w.ot]);
             });
-            
             Object.keys(workersGroupedByDate).sort().reverse().forEach(dateKey => {
                 const fDate = formatToDisplayDate(dateKey);
                 if(currentY > 260) { doc.addPage(); currentY = 20; }
-                
-                doc.setFontSize(11); 
-                doc.setTextColor(0); 
-                doc.text("Date: " + fDate, 14, currentY);
-                
+                doc.setFontSize(11); doc.setTextColor(0); doc.text("Date: " + fDate, 14, currentY);
                 doc.autoTable({
                     startY: currentY + 2,
                     head: [['Worker Name', 'Total OT Hours']],
