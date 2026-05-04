@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GS Constructions - Site Pro Manager</title>
+    
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#1a73e8">
+    <link rel="apple-touch-icon" href="./icon.png">
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
@@ -148,7 +153,6 @@
             <div class="section-title" style="color: var(--secondary);"><i class="fas fa-user-clock"></i> Workers Attendance</div>
             <input type="date" id="work-date">
             
-            <!-- SUPERVISOR SECTION -->
             <div style="background: #e8f5e9; padding: 12px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #a5d6a7;">
                 <label style="font-size: 13px; font-weight: bold; color: #2e7d32; margin-bottom: 5px; display: block;"><i class="fas fa-user-tie"></i> Site Supervisor (Auto-adds for the day)</label>
                 <div class="flex-row">
@@ -157,7 +161,6 @@
                 </div>
             </div>
 
-            <!-- WORKER SECTION -->
             <input list="workers-list" id="worker-name" placeholder="Full Name of Worker">
             <datalist id="workers-list">
                 <option value="AKHIL DAS D"><option value="PRADEEP M"><option value="SREERAJ"><option value="AMEER ALI KHAN"><option value="SUKU K"><option value="RINU M"><option value="DIJU GEORGE"><option value="RAVEENDRAN PILLAI"><option value="HARIKUMAR"><option value="AROMAL"><option value="BINUKUMAR"><option value="BINU G"><option value="SREEKUMAR"><option value="ANOOP KUMAR"><option value="SAJAN JOSEPH"><option value="VASAVAN MADHU"><option value="AJEESH KUMAR MD"><option value="BILENDRAN"><option value="SUNIL BABU"><option value="SUNIL KUMAR K"><option value="JOYMUKHARJEE"><option value="ROY P JOHN"><option value="RADHAKRISHNA PILLAI"><option value="JEMIN J"><option value="RAJENDRAN R"><option value="ACHURAJ MB"><option value="MATHEW OOMMEN"><option value="AYYAPPAN R"><option value="RAJAN R"><option value="NITHIN V RAJ"><option value="GOPU D"><option value="ABHIJITH G P"><option value="SOORAJ R">
@@ -176,6 +179,15 @@
 <div class="footer-credit"><i class="fas fa-code"></i> Designed by soorajrmaranadu</div>
 
 <script>
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then((reg) => console.log('Service Worker Registered!', reg))
+                .catch((err) => console.log('Service Worker Registration Failed!', err));
+        });
+    }
+
     const firebaseConfig = {
         apiKey: "AIzaSyDRDLw2bE_iG7OuE6diCGtrLmDePZStKr8",
         authDomain: "gsconstructions-3f4c9.firebaseapp.com",
@@ -209,7 +221,6 @@
             document.getElementById('work-date').value = today;
             document.getElementById('equip-date').value = today;
             
-            // Load default supervisor name from localStorage
             document.getElementById('sup-name').value = localStorage.getItem('gs_default_sup') || "";
             refreshUI();
         }
@@ -298,7 +309,6 @@
         if(!date) return alert("Please select date.");
 
         if (currentEditWorkId) {
-            // Update mode
             if (window.isEditingSupervisor) {
                 const name = document.getElementById('sup-name').value;
                 const ot = parseFloat(document.getElementById('sup-ot').value) || 0;
@@ -317,22 +327,18 @@
             return;
         }
 
-        // New Entry Mode
         const wName = document.getElementById('worker-name').value.trim();
         const wOt = parseFloat(document.getElementById('worker-ot').value) || 0;
         const supName = document.getElementById('sup-name').value.trim();
         const supOt = parseFloat(document.getElementById('sup-ot').value) || 0;
 
-        // Check if supervisor already added for this specific date
         const supExistsForDate = window.pdfWorkers.some(w => w.date === date && w.isSupervisor);
 
-        // 1. Auto-save Supervisor if they don't exist for this day and name is given
         if (!supExistsForDate && supName !== "") {
             await db.collection('workers').add({ date, name: supName, ot: supOt, isSupervisor: true, uid: auth.currentUser.uid, ts: Date.now() - 10 });
             saveDefaultSup();
         }
 
-        // 2. Save Worker
         if (wName !== "") {
             await db.collection('workers').add({ date, name: wName, ot: wOt, isSupervisor: false, uid: auth.currentUser.uid, ts: Date.now() });
         } else if (supName === "" && wName === "") {
@@ -341,11 +347,10 @@
 
         document.getElementById('worker-name').value = "";
         document.getElementById('worker-ot').value = "";
-        document.getElementById('sup-ot').value = ""; // Clear OT for next person
+        document.getElementById('sup-ot').value = ""; 
         refreshUI();
     }
 
-    // New Function to easily add worker to a past date
     function addWorkerToPastDate(date) {
         document.getElementById('work-date').value = date;
         document.getElementById('worker-name').focus();
@@ -358,7 +363,6 @@
         updateSiteName();
         window.pdfMaterials = []; window.pdfEquipments = []; window.pdfWorkers = [];
 
-        // --- Materials ---
         const mSnap = await db.collection('materials').where('uid', '==', uid).get();
         let totalW = 0, mAreaGroups = {};
         mSnap.forEach(doc => {
@@ -384,7 +388,6 @@
         document.getElementById('mat-grouped-display').innerHTML = mHTML;
         document.getElementById('grand-total').innerText = totalW.toFixed(2) + " KG";
 
-        // --- Equipments ---
         const eSnap = await db.collection('equipments').where('uid', '==', uid).get();
         const eGroups = {}; eSnap.forEach(doc => { const d = doc.data(); if(!eGroups[d.date]) eGroups[d.date] = []; eGroups[d.date].push({id: doc.id, ...d}); 
         window.pdfEquipments.push([formatToDisplayDate(d.date), d.name, d.equipId || '-', d.qty]); });
@@ -398,7 +401,6 @@
         });
         document.getElementById('equip-grouped-list').innerHTML = eRows;
 
-        // --- Workers & Supervisors ---
         const wSnap = await db.collection('workers').where('uid', '==', uid).get();
         const wGroups = {}; 
         wSnap.forEach(doc => { 
@@ -422,7 +424,6 @@
                       </div>
                       <table>`;
             
-            // Render Supervisor First
             if (g.supervisor) {
                 wRows += `<tr style="background: #e8f5e9;">
                             <td><strong><i class="fas fa-user-tie" style="color:#2e7d32;"></i> ${g.supervisor.name}</strong> <small>(Sup)</small></td>
@@ -432,7 +433,6 @@
                             <button class="btn-circle btn-red" onclick="removeDoc('workers','${g.supervisor.id}')"><i class="fas fa-trash"></i></button></div></td>
                           </tr>`;
             }
-            // Render Workers
             g.workers.forEach(w => {
                 wRows += `<tr><td>${w.name}</td><td>OT: ${w.ot}</td>
                 <td><div style="display:flex;gap:5px;">
@@ -464,7 +464,6 @@
         window.scrollTo({ top: document.getElementById('work-date').offsetTop - 50, behavior: 'smooth' });
     }
 
-    // --- Utility Functions ---
     function formatToDisplayDate(dateStr) { if(!dateStr) return ""; const [y, m, d] = dateStr.split('-'); return `${d}-${m}-${y}`; }
     function autoCalcQty() { const idVal = document.getElementById('equip-id').value; if(idVal.trim() === "") { document.getElementById('equip-qty').value = ""; return; } const ids = idVal.split(',').filter(item => item.trim() !== ""); document.getElementById('equip-qty').value = ids.length; }
     function togglePlateInput() { const isPlate = document.getElementById('mat-type').options[document.getElementById('mat-type').selectedIndex].getAttribute('data-type') === 'plate'; document.getElementById('plate-width-div').classList.toggle('hidden', !isPlate); }
@@ -474,7 +473,6 @@
     function editMatEntry(id, area, dir, len, wid, date, qty, name) { currentEditMatId = id; document.getElementById('mat-date').value = date; document.getElementById('mat-area').value = area; document.getElementById('mat-direction').value = dir || ""; document.getElementById('mat-length').value = len; document.getElementById('mat-width').value = wid || ""; document.getElementById('mat-qty').value = qty || 1; const sel = document.getElementById('mat-type'); for(let i=0; i<sel.options.length; i++) { if(sel.options[i].text === name) { sel.selectedIndex = i; break; } } togglePlateInput(); document.getElementById('mat-action-btn').innerHTML = '<i class="fas fa-save"></i> Update Material'; }
     function editEquipEntry(id, name, qty, equipId, date) { currentEditEquipId = id; document.getElementById('equip-date').value = date; document.getElementById('equip-name').value = name; document.getElementById('equip-qty').value = qty; document.getElementById('equip-id').value = (equipId !== 'undefined') ? equipId : ''; document.getElementById('equip-action-btn').innerHTML = '<i class="fas fa-save"></i> Update Equipment'; }
 
-    // --- PDF Export Functions ---
     function generateMaterialPDF() {
         if (window.pdfMaterials.length === 0) return alert("No data");
         const { jsPDF } = window.jspdf; const doc = new jsPDF();
@@ -534,7 +532,6 @@
             const workersGroupedByDate = {};
             window.pdfWorkers.forEach(w => {
                 if (!workersGroupedByDate[w.date]) workersGroupedByDate[w.date] = [];
-                // Push supervisor to the top with a special tag
                 if (w.isSupervisor) {
                     workersGroupedByDate[w.date].unshift([w.name + " (Supervisor)", w.ot]);
                 } else {
@@ -550,15 +547,6 @@
         }
         doc.save(site + "_Full_Report.pdf");
     }
-    // Service Worker Registration for PWA
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
-                .then(reg => console.log('Service Worker: Registered'))
-                .catch(err => console.log('Service Worker: Error:', err));
-        });
-    }
-
 </script>
 </body>
 </html>
