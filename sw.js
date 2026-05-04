@@ -1,19 +1,22 @@
-const CACHE_NAME = 'gs-constructions-v2';
-const ASSETS = [
-  './',
-  './index.html',
-  './manifest.json'
-];
+const CACHE_NAME = 'gs-site-manager-v2';
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
-  );
+    event.waitUntil(
+        caches.open(CACHE_NAME).then((cache) => {
+            return cache.addAll([
+                './',
+                './index.html',
+                './icon.png',
+                './manifest.json'
+            ]);
+        })
+    );
 });
 
 self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
-  );
+    event.respondWith(
+        caches.match(event.request).then((response) => {
+            return response || fetch(event.request);
+        })
+    );
 });
-
